@@ -234,18 +234,18 @@ const map = new maplibregl.Map({
       satellite: {
         type: "raster",
         tiles: [
-          "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+          "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg"
         ],
         tileSize: 256,
-        maxzoom: 22,
-        attribution: "Google"
+        maxzoom: 18,
+        attribution: "国土地理院"
       }
     },
     layers: [{ id: "satellite", type: "raster", source: "satellite" }]
   },
   center: [139.6585, 35.4230],
   zoom: 15,
-  maxZoom: 22,
+  maxZoom: 21,
 });
 
 map.addControl(new maplibregl.NavigationControl(), "top-right");
