@@ -233,16 +233,19 @@ const map = new maplibregl.Map({
     sources: {
       satellite: {
         type: "raster",
-        tiles: ["https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}"],
+        tiles: [
+          "https://mt1.google.com/vt/lyrs=s&x={x}&y={y}&z={z}"
+        ],
         tileSize: 256,
-        attribution: "Esri, Maxar, Earthstar Geographics"
+        maxzoom: 22,
+        attribution: "Google"
       }
     },
     layers: [{ id: "satellite", type: "raster", source: "satellite" }]
   },
   center: [139.6585, 35.4230],
   zoom: 15,
-  maxZoom: 20
+  maxZoom: 22,
 });
 
 map.addControl(new maplibregl.NavigationControl(), "top-right");
