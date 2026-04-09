@@ -3,513 +3,1015 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Honmoku Tree Map — Editor</title>
+  <title>Honmoku Trees — Community tree map of Honmoku, Yokohama</title>
+  <meta name="description" content="A community project documenting the trees, species, and canopy of Honmoku neighbourhood in Yokohama, Japan." />
 
-  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
 
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
+    :root {
+      --paper:  #F7F6F3;
+      --white:  #FFFFFF;
+      --ink:    #1A1A1A;
+      --ink-2:  #555555;
+      --ink-3:  #999999;
+      --accent: #1F7A4D;
+      --border: rgba(26,26,26,0.10);
+      --border-2: rgba(26,26,26,0.06);
+      --r:      16px;
+      --r-sm:   10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0a0a0a;
-      color: #e0e0e0;
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
     }
+    body.nav-open { overflow: hidden; }
 
-    /* ── Header ──────────────────────────────────��──── */
-    header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 20px;
-      background: rgba(10, 10, 10, 0.9);
+    /* ── Nav ─────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      background: rgba(247,246,243,0.90);
       backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      gap: 12px;
-      flex-wrap: wrap;
+      border-bottom: 0.5px solid var(--border);
     }
-    header h1 { font-size: 16px; font-weight: 600; white-space: nowrap; }
-    header h1 span { color: #4ade80; }
-    .stats { font-size: 13px; color: #888; white-space: nowrap; }
-    .stats b { color: #4ade80; }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--ink);
+    }
+    .brand-icon {
+      width: 30px; height: 30px; background: var(--accent);
+      border-radius: 9px; display: flex; align-items: center;
+      justify-content: center; color: #fff; font-size: 15px; flex-shrink: 0;
+    }
+    .brand-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px; letter-spacing: -0.01em;
+    }
+    .brand-name em { color: var(--accent); font-style: normal; }
 
-    .toolbar { display: flex; gap: 8px; align-items: center; }
-    .toolbar button {
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: #e0e0e0;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.15s;
-    }
-    .toolbar button:hover { background: rgba(255,255,255,0.1); }
-    .toolbar button.active { background: #16a34a; border-color: #16a34a; color: #fff; }
-    .toolbar button.export-btn { background: #2563eb; border-color: #2563eb; }
-    .toolbar button.export-btn:hover { background: #1d4ed8; }
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { font-size: 14px; color: var(--ink-2); text-decoration: none; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--ink); }
 
-    /* ���─ Map ────────────────────────────────────────── */
-    #map { position: fixed; top: 0; bottom: 0; left: 0; right: 0; }
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .btn-nav {
+      display: inline-flex; align-items: center;
+      font-size: 14px; font-weight: 500;
+      padding: 7px 20px;
+      background: var(--ink); color: #fff;
+      border-radius: 100px; text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .btn-nav:hover { opacity: 0.75; }
+    .btn-nav.ghost {
+      background: none; color: var(--ink-2);
+      border: 0.5px solid var(--border);
+    }
+    .btn-nav.ghost:hover { background: var(--white); color: var(--ink); opacity: 1; }
 
-    /* ── Side Panel ─────────────────────────────────── */
-    .panel {
-      position: fixed;
-      top: 56px; right: 0; bottom: 0;
-      width: 320px;
-      background: rgba(15, 15, 15, 0.95);
-      backdrop-filter: blur(12px);
-      border-left: 1px solid rgba(255,255,255,0.06);
-      z-index: 15;
-      transform: translateX(100%);
-      transition: transform 0.25s ease;
-      overflow-y: auto;
-      padding: 20px;
+    .nav-toggle {
+      display: none; width: 42px; height: 42px;
+      border: 0.5px solid var(--border); border-radius: 999px;
+      background: rgba(255,255,255,0.72); color: var(--ink);
+      cursor: pointer; align-items: center; justify-content: center;
+      gap: 4px; flex-direction: column;
     }
-    .panel.open { transform: translateX(0); }
-    .panel h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #4ade80; }
-    .panel label {
-      display: block;
-      font-size: 12px;
-      color: #888;
-      margin-bottom: 4px;
-      margin-top: 12px;
+    .nav-toggle span {
+      display: block; width: 16px; height: 1.5px;
+      border-radius: 999px; background: currentColor;
+      transition: transform 0.25s ease, opacity 0.25s ease;
     }
-    .panel input, .panel textarea, .panel select {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: #e0e0e0;
-      font-size: 13px;
-      font-family: inherit;
+    .nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+    .nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+    .mobile-menu {
+      display: none; position: fixed; top: 60px; left: 0; right: 0; z-index: 90;
+      opacity: 0; pointer-events: none; transform: translateY(-10px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
     }
-    .panel input:focus, .panel textarea:focus {
-      outline: none;
-      border-color: #4ade80;
+    .mobile-menu.is-open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .mobile-menu-inner {
+      background: rgba(247,246,243,0.98); backdrop-filter: blur(14px);
+      border-bottom: 0.5px solid var(--border); padding: 16px 20px 24px;
+      display: grid; gap: 10px;
     }
-    .panel textarea { resize: vertical; min-height: 60px; }
-    .panel-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 20px;
+    .mobile-menu-inner a {
+      display: block; text-decoration: none; color: var(--ink);
+      background: var(--white); border: 0.5px solid var(--border);
+      border-radius: 14px; padding: 14px 16px; font-size: 15px;
     }
-    .panel-buttons button {
-      flex: 1;
-      padding: 8px 0;
-      border-radius: 8px;
-      border: none;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-    .btn-save { background: #16a34a; color: #fff; }
-    .btn-save:hover { background: #15803d; }
-    .btn-delete { background: #dc2626; color: #fff; }
-    .btn-delete:hover { background: #b91c1c; }
-    .btn-cancel { background: rgba(255,255,255,0.1); color: #ccc; }
-    .btn-cancel:hover { background: rgba(255,255,255,0.15); }
+    .mobile-menu-inner .btn-nav { justify-content: center; border: none; padding: 14px 16px; }
 
-    /* ── Legend ──────────────────────────────────────── */
-    .legend {
-      position: fixed;
-      bottom: 32px; left: 24px;
-      z-index: 10;
-      background: rgba(20, 20, 20, 0.9);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 12px;
-      padding: 14px 18px;
-      font-size: 12px;
-    }
-    .legend-title { font-weight: 600; margin-bottom: 8px; font-size: 13px; }
-    .legend-item { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
-    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    /* ── Sections ────────────────────────────────────────── */
+    section { padding: 120px 32px; max-width: 1080px; margin: 0 auto; }
 
-    /* ── Toast ───────────────────────────────────────── */
-    .toast {
-      position: fixed;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: rgba(20,20,20,0.95);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
-      padding: 10px 20px;
-      font-size: 13px;
-      z-index: 30;
-      opacity: 0;
-      transition: all 0.3s ease;
-      pointer-events: none;
+    /* ── Hero ────────────────────────────────────────────── */
+    .hero {
+      padding-top: 172px; padding-bottom: 120px; text-align: center;
     }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+    .hero-kana {
+      font-size: 13px; letter-spacing: 0.2em; color: var(--ink-3); margin-bottom: 28px;
+    }
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(48px, 7vw, 80px);
+      line-height: 1.06; letter-spacing: -0.025em;
+      color: var(--ink); margin-bottom: 24px;
+      max-width: 760px; margin-left: auto; margin-right: auto;
+    }
+    .hero h1 em { font-style: italic; color: var(--ink-2); }
+    .hero-sub {
+      font-size: 18px; color: var(--ink-2); font-weight: 300;
+      max-width: 520px; margin: 0 auto 48px; line-height: 1.65;
+    }
+    .hero-actions {
+      display: flex; align-items: center; gap: 16px; justify-content: center; flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; background: var(--ink); color: var(--white);
+      border-radius: 100px; font-size: 15px; font-weight: 500;
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.75; }
+    .btn-ghost {
+      display: inline-flex; align-items: center;
+      font-size: 15px; color: var(--ink-2); text-decoration: none;
+      border-bottom: 1px solid var(--border); padding-bottom: 1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-ghost:hover { color: var(--ink); border-color: var(--ink); }
+    .hero-stat {
+      margin-top: 52px; font-size: 13px; color: var(--ink-3);
+    }
+    .hero-stat b { color: var(--ink); font-weight: 500; }
 
-    /* ── Crosshair when adding ──────────────────────── */
-    .crosshair .maplibregl-canvas { cursor: crosshair !important; }
+    /* ── Divider ─────────────────────────────────────────── */
+    .divider { height: 0.5px; background: var(--border); max-width: 1080px; margin: 0 auto; }
+
+    /* ── Typography helpers ──────────────────────────────── */
+    .section-label {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--ink-3); margin-bottom: 20px;
+    }
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px;
+    }
+    .section-intro {
+      font-size: 16px; color: var(--ink-2); max-width: 520px; line-height: 1.75;
+    }
+
+    /* ── About layout ────────────────────────────────────── */
+    .about-layout {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+      align-items: start; margin-top: 56px;
+    }
+    .about-text p { font-size: 16px; color: var(--ink-2); line-height: 1.8; margin-bottom: 16px; }
+
+    /* ── Attributes grid ─────────────────────────────────── */
+    .attr-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: var(--border); border-radius: var(--r); overflow: hidden;
+    }
+    .attr-cell { background: var(--white); padding: 24px 22px; }
+    .attr-icon  { font-size: 20px; margin-bottom: 10px; }
+    .attr-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+    .attr-desc  { font-size: 13px; color: var(--ink-3); line-height: 1.5; }
+
+    /* ── Steps ───────────────────────────────────────────── */
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+      background: var(--border); border-radius: var(--r); overflow: hidden;
+      margin-top: 56px;
+    }
+    .step { background: var(--paper); padding: 36px 28px; }
+    .step.dark { background: var(--ink); }
+    .step-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 13px; color: var(--ink-3); margin-bottom: 16px; letter-spacing: 0.04em;
+    }
+    .step.dark .step-num { color: rgba(255,255,255,0.35); }
+    .step-title { font-size: 15px; font-weight: 500; color: var(--ink); margin-bottom: 10px; }
+    .step.dark .step-title { color: var(--white); }
+    .step-body  { font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+    .step.dark .step-body  { color: rgba(255,255,255,0.5); }
+
+    /* ── Access pair ─────────────────────────────────────── */
+    .access-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: var(--border); border-radius: var(--r); overflow: hidden;
+      margin-top: 24px;
+    }
+    .access-cell { background: var(--white); padding: 40px 32px; }
+    .access-cell.dark { background: var(--ink); }
+    .access-badge {
+      display: inline-flex; font-size: 10px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 100px; margin-bottom: 20px;
+    }
+    .badge-free   { background: rgba(31,122,77,0.09); color: var(--accent); }
+    .badge-contrib{ background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.6); }
+    .access-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px; line-height: 1.2; margin-bottom: 12px;
+    }
+    .access-cell      .access-title { color: var(--ink); }
+    .access-cell.dark .access-title { color: var(--white); }
+    .access-body { font-size: 14px; line-height: 1.7; }
+    .access-cell      .access-body { color: var(--ink-2); }
+    .access-cell.dark .access-body { color: rgba(255,255,255,0.55); }
+    .access-cell .btn-primary { margin-top: 24px; padding: 10px 24px; font-size: 14px; }
+    .btn-white {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 24px; padding: 10px 24px;
+      background: var(--white); color: var(--ink);
+      border-radius: 100px; font-size: 14px; font-weight: 500;
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .btn-white:hover { opacity: 0.85; }
+
+    /* ── CTA ─────────────────────────────────────────────── */
+    .cta-shell { padding: 120px 32px; }
+    .cta-inner {
+      text-align: center; max-width: 640px; margin: 0 auto;
+    }
+    .cta-inner h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(32px, 5vw, 52px);
+      line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 20px;
+    }
+    .cta-inner p { font-size: 16px; color: var(--ink-2); margin-bottom: 36px; line-height: 1.7; }
+
+    /* ── Footer ──────────────────────────────────────────── */
+    footer {
+      border-top: 0.5px solid var(--border);
+      padding: 40px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1080px; margin: 0 auto;
+    }
+    .footer-copy { font-size: 13px; color: var(--ink-3); }
+    .footer-loc  { font-size: 13px; color: var(--ink-3); }
+
+    /* ── Reveal ──────────────────────────────────────────── */
+    .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.65s ease, transform 0.65s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+    .d1 { transition-delay: 0.08s; }
+    .d2 { transition-delay: 0.16s; }
+    .d3 { transition-delay: 0.24s; }
+
+    /* ── Responsive ──────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .nav-links, .nav-right { display: none; }
+      .nav-toggle { display: inline-flex; }
+      .mobile-menu { display: block; }
+      section { padding: 80px 20px; }
+      .hero { padding-top: 130px; padding-bottom: 80px; }
+      .hero h1 { font-size: 40px; }
+      .hero-actions { flex-direction: column; align-items: center; }
+      .about-layout { grid-template-columns: 1fr; gap: 40px; }
+      .attr-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .access-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
   </style>
 </head>
-
 <body>
 
-<header>
-  <h1>🌳 Honmoku <span>Tree Map</span></h1>
-  <div class="stats" id="stats"></div>
-  <div class="toolbar">
-    <button id="btn-add" title="Click map to add a tree">+ Add tree</button>
-    <button id="btn-undo" title="Undo last action">↩ Undo</button>
-    <button class="export-btn" id="btn-export" title="Download edited GeoJSON">⬇ Export GeoJSON</button>
-    <button class="export-btn" id="btn-csv" title="Download as CSV">⬇ Export CSV</button>
+<!-- ── Nav ──────────────────────────────────────────────────────── -->
+<nav>
+  <a href="index.html" class="nav-brand" aria-label="Honmoku Trees home">
+    <div class="brand-icon">🌳</div>
+    <span class="brand-name">Honmoku <em>Trees</em></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">The project</a></li>
+    <li><a href="#contribute">Contribute</a></li>
+    <li><a href="map.html">Map</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="login.html" class="btn-nav ghost" id="nav-login-btn">Sign in to contribute</a>
+    <a href="map.html" class="btn-nav">Open map →</a>
   </div>
-</header>
+  <button class="nav-toggle" type="button" aria-expanded="false"
+          aria-controls="mobile-menu" aria-label="Open navigation">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
 
-<div id="map"></div>
-
-<!-- Edit / New tree panel -->
-<div class="panel" id="panel">
-  <h2 id="panel-title">Edit tree</h2>
-
-  <label>Species (English)</label>
-  <input type="text" id="f-species-en" placeholder="e.g. Japanese Black Pine" />
-
-  <label>Species (Japanese)</label>
-  <input type="text" id="f-species-jp" placeholder="e.g. クロマツ" />
-
-  <label>Species (Latin)</label>
-  <input type="text" id="f-species-lat" placeholder="e.g. Pinus thunbergii" />
-
-  <label>Height (m)</label>
-  <input type="number" id="f-height" step="0.1" />
-
-  <label>Canopy area (m²)</label>
-  <input type="number" id="f-canopy" step="0.1" />
-
-  <label>Estimated age (years)</label>
-  <input type="number" id="f-age" />
-
-  <label>Notes</label>
-  <textarea id="f-notes" placeholder="Any notes about this tree..."></textarea>
-
-  <label>Photo URL</label>
-  <input type="text" id="f-photo" placeholder="https://..." />
-
-  <div class="panel-buttons">
-    <button class="btn-save" id="btn-save">💾 Save</button>
-    <button class="btn-delete" id="btn-delete">🗑 Delete</button>
-    <button class="btn-cancel" id="btn-close">✕ Cancel</button>
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-inner">
+    <a href="#about">The project</a>
+    <a href="#contribute">Contribute</a>
+    <a href="map.html">Open map</a>
+    <a href="login.html" class="btn-nav" id="mobile-login-btn">Sign in to contribute</a>
   </div>
 </div>
 
-<div class="legend">
-  <div class="legend-title">Tree height</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#86efac"></div> &lt; 5 m</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div> 5 – 10 m</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div> 10 – 20 m</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#166534"></div> &gt; 20 m</div>
-</div>
+<!-- ── Hero ─────────────────────────────────────────────────────── -->
+<section class="hero">
+  <p class="hero-kana reveal">本牧の木々</p>
+  <h1 class="reveal d1">Every tree in Honmoku,<br><em>mapped.</em></h1>
+  <p class="hero-sub reveal d2">A community record of the trees, species, and canopy of Honmoku neighbourhood in Yokohama.</p>
+  <div class="hero-actions reveal d3">
+    <a href="map.html" class="btn-primary">Explore the map</a>
+    <a href="login.html" class="btn-ghost">Sign in to contribute</a>
+  </div>
+  <p class="hero-stat reveal d3" id="hero-stat">Loading…</p>
+</section>
 
-<div class="toast" id="toast"></div>
+<div class="divider"></div>
+
+<!-- ── About ────────────────────────────────────────────────────── -->
+<section id="about">
+  <p class="section-label reveal">The project</p>
+  <div class="about-layout">
+    <div class="about-text">
+      <h2 class="section-title reveal">A living record of Honmoku's urban forest</h2>
+      <p class="reveal">Honmoku is a quiet coastal neighbourhood in Yokohama — once an international settlement, now a place where old gardens and street trees carry decades of history in their rings.</p>
+      <p class="reveal">This project documents those trees: species, height, canopy spread, and estimated age. Each entry is a small act of attention — a way of saying <em>this tree was here, and someone noticed.</em></p>
+      <p class="reveal">The map is open to everyone. Contributions come from a small group of approved members and are reviewed before going live.</p>
+    </div>
+    <div class="attr-grid reveal">
+      <div class="attr-cell">
+        <div class="attr-icon">🌿</div>
+        <div class="attr-title">Species</div>
+        <div class="attr-desc">English, Japanese, and Latin names for every tree</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">📏</div>
+        <div class="attr-title">Height</div>
+        <div class="attr-desc">Estimated trunk-to-crown height in metres</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">🌳</div>
+        <div class="attr-title">Canopy</div>
+        <div class="attr-desc">Approximate canopy spread area in m²</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">⏳</div>
+        <div class="attr-title">Age</div>
+        <div class="attr-desc">Estimated age in years where known</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">📍</div>
+        <div class="attr-title">Location</div>
+        <div class="attr-desc">Precise GPS coordinates from the field</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">📝</div>
+        <div class="attr-title">Notes</div>
+        <div class="attr-desc">Field observations and photos</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── How it works ─────────────────────────────────────────────── -->
+<section id="contribute">
+  <p class="section-label reveal">How it works</p>
+  <h2 class="section-title reveal">Open to explore.<br>Reviewed before it's live.</h2>
+  <p class="section-intro reveal">Anyone can browse the map. Contributing data requires an approved account — and every submission is reviewed by the admin before it appears.</p>
+
+  <div class="steps-grid reveal">
+    <div class="step">
+      <p class="step-num">01</p>
+      <p class="step-title">Explore the map</p>
+      <p class="step-body">Browse every documented tree in Honmoku. Click any pin to see species, height, canopy data, and notes. No account needed.</p>
+    </div>
+    <div class="step dark">
+      <p class="step-num">02</p>
+      <p class="step-title">Get a contributor account</p>
+      <p class="step-body">Accounts are created manually by the project admin. Once approved, you receive credentials to sign in and contribute.</p>
+    </div>
+    <div class="step">
+      <p class="step-num">03</p>
+      <p class="step-title">Submit a change</p>
+      <p class="step-body">Add a new tree, edit an existing entry, or flag one for removal. Your change is queued for admin review before going live.</p>
+    </div>
+  </div>
+
+  <div class="access-grid reveal">
+    <div class="access-cell">
+      <span class="access-badge badge-free">Free · read-only</span>
+      <p class="access-title">Browse without an account</p>
+      <p class="access-body">The full map is open to everyone. View species names, heights, canopy areas, and field notes for every documented tree in Honmoku.</p>
+      <a href="map.html" class="btn-primary">Open the map →</a>
+    </div>
+    <div class="access-cell dark">
+      <span class="access-badge badge-contrib">Contributor</span>
+      <p class="access-title">Add and edit tree data</p>
+      <p class="access-body">Approved contributors can add new trees, edit records, and flag removals. All changes go through review before appearing on the map.</p>
+      <a href="login.html" class="btn-white">Sign in to contribute →</a>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── CTA ──────────────────────────────────────────────────────── -->
+<section class="cta-shell">
+  <div class="cta-inner">
+    <h2 class="reveal">Start exploring</h2>
+    <p class="reveal">Hundreds of trees documented. More added every week. Zoom in, click around, and learn the trees of Honmoku.</p>
+    <a href="map.html" class="btn-primary reveal">Open the map →</a>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────────── -->
+<footer>
+  <p class="footer-copy">© 2026 Honmoku Trees</p>
+  <p class="footer-loc">本牧 · Yokohama, Japan</p>
+</footer>
 
 <script>
-// ============================================================================
-// STATE
-// ============================================================================
-let treeData = null;      // the live GeoJSON FeatureCollection
-let editingId = null;     // which tree is selected
-let addMode = false;      // click-to-add mode
-let history = [];         // undo stack (snapshots of treeData)
-let nextId = 1;
+const { createClient } = window.supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-// ============================================================================
-// MAP SETUP
-// ============================================================================
-const map = new maplibregl.Map({
-  container: "map",
-  style: {
-    version: 8,
-    sources: {
-      satellite: {
-        type: "raster",
-        tiles: [
-          "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg"
-        ],
-        tileSize: 256,
-        maxzoom: 18,
-        attribution: "国土地理院"
-      }
-    },
-    layers: [{ id: "satellite", type: "raster", source: "satellite" }]
-  },
-  center: [139.6585, 35.4230],
-  zoom: 15,
-  maxZoom: 21,
-});
-
-map.addControl(new maplibregl.NavigationControl(), "top-right");
-map.addControl(new maplibregl.ScaleControl(), "bottom-right");
-
-// ============================================================================
-// LOAD DATA
-// ============================================================================
-map.on("load", async () => {
-  const res = await fetch("trees.geojson");
-  treeData = await res.json();
-
-  // Ensure every feature has an id
-  treeData.features.forEach((f, i) => {
-    if (!f.properties.id) f.properties.id = i + 1;
-    nextId = Math.max(nextId, f.properties.id + 1);
-  });
-
-  map.addSource("trees", { type: "geojson", data: treeData });
-
-  map.addLayer({
-    id: "tree-circles",
-    type: "circle",
-    source: "trees",
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3, 16, 6, 19, 12],
-      "circle-color": [
-        "step", ["coalesce", ["get", "height_m"], 0],
-        "#86efac", 5, "#4ade80", 10, "#16a34a", 20, "#166534"
-      ],
-      "circle-opacity": 0.85,
-      "circle-stroke-width": 1.5,
-      "circle-stroke-color": "rgba(255,255,255,0.2)"
-    }
-  });
-
-  // Selected tree highlight
-  map.addLayer({
-    id: "tree-selected",
-    type: "circle",
-    source: "trees",
-    filter: ["==", ["get", "id"], -1],
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 5, 16, 9, 19, 16],
-      "circle-color": "transparent",
-      "circle-stroke-width": 3,
-      "circle-stroke-color": "#facc15"
-    }
-  });
-
-  updateStats();
-
-  // Click tree → edit
-  map.on("click", "tree-circles", (e) => {
-    if (addMode) return;
-    const f = e.features[0];
-    selectTree(f.properties.id);
-    e.preventDefault();
-  });
-
-  // Click map (not on tree) → add if in add mode
-  map.on("click", (e) => {
-    if (!addMode) return;
-    if (e.defaultPrevented) return;
-    addTree(e.lngLat.lng, e.lngLat.lat);
-  });
-
-  map.on("mouseenter", "tree-circles", () => {
-    if (!addMode) map.getCanvas().style.cursor = "pointer";
-  });
-  map.on("mouseleave", "tree-circles", () => {
-    if (!addMode) map.getCanvas().style.cursor = "";
-  });
-});
-
-// ============================================================================
-// TREE OPERATIONS
-// ============================================================================
-
-function saveSnapshot() {
-  history.push(JSON.stringify(treeData));
-  if (history.length > 50) history.shift();
-}
-
-function refreshMap() {
-  map.getSource("trees").setData(treeData);
-  updateStats();
-}
-
-function updateStats() {
-  const n = treeData.features.length;
-  const avg = n > 0
-    ? (treeData.features.reduce((s, f) => s + (f.properties.height_m || 0), 0) / n).toFixed(1)
-    : 0;
-  document.getElementById("stats").innerHTML = `<b>${n}</b> trees · avg <b>${avg} m</b>`;
-}
-
-function selectTree(id) {
-  const f = treeData.features.find(f => f.properties.id === id);
-  if (!f) return;
-  editingId = id;
-
-  map.setFilter("tree-selected", ["==", ["get", "id"], id]);
-
-  document.getElementById("panel-title").textContent = `Tree #${id}`;
-  document.getElementById("f-species-en").value  = f.properties.species_en  || "";
-  document.getElementById("f-species-jp").value  = f.properties.species_jp  || "";
-  document.getElementById("f-species-lat").value = f.properties.species_lat || "";
-  document.getElementById("f-height").value      = f.properties.height_m    || "";
-  document.getElementById("f-canopy").value      = f.properties.canopy_m2   || "";
-  document.getElementById("f-age").value         = f.properties.age_years   || "";
-  document.getElementById("f-notes").value       = f.properties.notes       || "";
-  document.getElementById("f-photo").value       = f.properties.photo_url   || "";
-
-  document.getElementById("btn-delete").style.display = "block";
-  document.getElementById("panel").classList.add("open");
-}
-
-function addTree(lng, lat) {
-  saveSnapshot();
-
-  const id = nextId++;
-  const feature = {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [lng, lat] },
-    properties: {
-      id,
-      height_m: null,
-      canopy_m2: null,
-      species_en: "",
-      species_jp: "",
-      species_lat: "",
-      age_years: null,
-      notes: "Manually added",
-      photo_url: ""
-    }
-  };
-
-  treeData.features.push(feature);
-  refreshMap();
-  selectTree(id);
-  toast(`🌱 Tree #${id} added — fill in the details`);
-}
-
-// ============================================================================
-// UI HANDLERS
-// ============================================================================
-
-// Save
-document.getElementById("btn-save").addEventListener("click", () => {
-  if (editingId === null) return;
-  saveSnapshot();
-
-  const f = treeData.features.find(f => f.properties.id === editingId);
-  if (!f) return;
-
-  f.properties.species_en  = document.getElementById("f-species-en").value;
-  f.properties.species_jp  = document.getElementById("f-species-jp").value;
-  f.properties.species_lat = document.getElementById("f-species-lat").value;
-  f.properties.height_m    = parseFloat(document.getElementById("f-height").value) || null;
-  f.properties.canopy_m2   = parseFloat(document.getElementById("f-canopy").value) || null;
-  f.properties.age_years   = parseInt(document.getElementById("f-age").value) || null;
-  f.properties.notes       = document.getElementById("f-notes").value;
-  f.properties.photo_url   = document.getElementById("f-photo").value;
-
-  refreshMap();
-  closePanel();
-  toast(`✅ Tree #${editingId} saved`);
-});
-
-// Delete
-document.getElementById("btn-delete").addEventListener("click", () => {
-  if (editingId === null) return;
-  saveSnapshot();
-
-  treeData.features = treeData.features.filter(f => f.properties.id !== editingId);
-  refreshMap();
-  closePanel();
-  toast(`🗑 Tree #${editingId} deleted`);
-});
-
-// Cancel
-document.getElementById("btn-close").addEventListener("click", closePanel);
-
-// Add mode toggle
-document.getElementById("btn-add").addEventListener("click", () => {
-  addMode = !addMode;
-  document.getElementById("btn-add").classList.toggle("active", addMode);
-  document.getElementById("map").classList.toggle("crosshair", addMode);
-  if (addMode) {
-    closePanel();
-    toast("🎯 Click on the map to place a tree");
+// Update CTA if already signed in
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) {
+    ['nav-login-btn', 'mobile-login-btn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = 'Open map'; el.href = 'map.html'; }
+    });
   }
 });
 
-// Undo
-document.getElementById("btn-undo").addEventListener("click", () => {
-  if (history.length === 0) { toast("Nothing to undo"); return; }
-  treeData = JSON.parse(history.pop());
-  refreshMap();
-  closePanel();
-  toast("↩ Undone");
-});
-
-// Export GeoJSON
-document.getElementById("btn-export").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(treeData, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "trees.geojson";
-  a.click();
-  URL.revokeObjectURL(url);
-  toast(`⬇ Exported ${treeData.features.length} trees as GeoJSON`);
-});
-
-// Export CSV
-document.getElementById("btn-csv").addEventListener("click", () => {
-  const fields = ["id","species_en","species_jp","species_lat","height_m","canopy_m2","age_years","notes","photo_url","lng","lat"];
-  let csv = fields.join(",") + "\n";
-  treeData.features.forEach(f => {
-    const p = f.properties;
-    const [lng, lat] = f.geometry.coordinates;
-    const row = [
-      p.id,
-      `"${(p.species_en||"").replace(/"/g,'""')}"`,
-      `"${(p.species_jp||"").replace(/"/g,'""')}"`,
-      `"${(p.species_lat||"").replace(/"/g,'""')}"`,
-      p.height_m || "",
-      p.canopy_m2 || "",
-      p.age_years || "",
-      `"${(p.notes||"").replace(/"/g,'""')}"`,
-      `"${(p.photo_url||"").replace(/"/g,'""')}"`,
-      lng, lat
-    ];
-    csv += row.join(",") + "\n";
-  });
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "trees.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-  toast(`⬇ Exported ${treeData.features.length} trees as CSV`);
-});
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function closePanel() {
-  editingId = null;
-  document.getElementById("panel").classList.remove("open");
-  map.setFilter("tree-selected", ["==", ["get", "id"], -1]);
+// Tree count
+async function loadStat() {
+  const el = document.getElementById('hero-stat');
+  try {
+    let n = null;
+    if (!SUPABASE_URL.includes('YOUR_PROJECT_ID')) {
+      const { count } = await sb.from('trees').select('*', { count: 'exact', head: true });
+      n = count;
+    }
+    if (n == null) {
+      const res = await fetch('trees.geojson');
+      const geo = await res.json();
+      n = geo.features?.length ?? 0;
+    }
+    el.innerHTML = `<b>${n.toLocaleString()}</b> trees documented across Honmoku`;
+  } catch (_) { el.textContent = ''; }
 }
+loadStat();
 
-function toast(msg) {
-  const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 2500);
+// Mobile nav
+const toggleBtn  = document.querySelector('.nav-toggle');
+const mobileMenu = document.getElementById('mobile-menu');
+function setOpen(open) {
+  toggleBtn?.setAttribute('aria-expanded', String(open));
+  mobileMenu?.classList.toggle('is-open', open);
+  document.body.classList.toggle('nav-open', open);
+}
+toggleBtn?.addEventListener('click', () => setOpen(toggleBtn.getAttribute('aria-expanded') !== 'true'));
+document.querySelectorAll('.mobile-menu-inner a').forEach(l => l.addEventListener('click', () => setOpen(false)));
+window.addEventListener('resize', () => { if (window.innerWidth > 768) setOpen(false); });
+
+// Scroll reveal
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const revEls = document.querySelectorAll('.reveal');
+if (prefersReduced || !('IntersectionObserver' in window)) {
+  revEls.forEach(el => el.classList.add('visible'));
+} else {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (!e.isIntersecting) return; e.target.classList.add('visible'); obs.unobserve(e.target); });
+  }, { threshold: 0.1 });
+  revEls.forEach(el => obs.observe(el));
 }
 </script>
+</body>
+</html>tml>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Honmoku Trees — Community tree map of Honmoku, Yokohama</title>
+  <meta name="description" content="A community project documenting the trees, species, and canopy of Honmoku neighbourhood in Yokohama, Japan." />
 
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+
+  <style>
+    :root {
+      --paper:  #F7F6F3;
+      --white:  #FFFFFF;
+      --ink:    #1A1A1A;
+      --ink-2:  #555555;
+      --ink-3:  #999999;
+      --accent: #1F7A4D;
+      --border: rgba(26,26,26,0.10);
+      --border-2: rgba(26,26,26,0.06);
+      --r:      16px;
+      --r-sm:   10px;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; scroll-padding-top: 70px; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      font-size: 17px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+    body.nav-open { overflow: hidden; }
+
+    /* ── Nav ─────────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 100;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      background: rgba(247,246,243,0.90);
+      backdrop-filter: blur(12px);
+      border-bottom: 0.5px solid var(--border);
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; color: var(--ink);
+    }
+    .brand-icon {
+      width: 30px; height: 30px; background: var(--accent);
+      border-radius: 9px; display: flex; align-items: center;
+      justify-content: center; color: #fff; font-size: 15px; flex-shrink: 0;
+    }
+    .brand-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px; letter-spacing: -0.01em;
+    }
+    .brand-name em { color: var(--accent); font-style: normal; }
+
+    .nav-links { display: flex; align-items: center; gap: 32px; list-style: none; }
+    .nav-links a { font-size: 14px; color: var(--ink-2); text-decoration: none; transition: color 0.2s; }
+    .nav-links a:hover { color: var(--ink); }
+
+    .nav-right { display: flex; align-items: center; gap: 10px; }
+    .btn-nav {
+      display: inline-flex; align-items: center;
+      font-size: 14px; font-weight: 500;
+      padding: 7px 20px;
+      background: var(--ink); color: #fff;
+      border-radius: 100px; text-decoration: none;
+      transition: opacity 0.2s;
+    }
+    .btn-nav:hover { opacity: 0.75; }
+    .btn-nav.ghost {
+      background: none; color: var(--ink-2);
+      border: 0.5px solid var(--border);
+    }
+    .btn-nav.ghost:hover { background: var(--white); color: var(--ink); opacity: 1; }
+
+    .nav-toggle {
+      display: none; width: 42px; height: 42px;
+      border: 0.5px solid var(--border); border-radius: 999px;
+      background: rgba(255,255,255,0.72); color: var(--ink);
+      cursor: pointer; align-items: center; justify-content: center;
+      gap: 4px; flex-direction: column;
+    }
+    .nav-toggle span {
+      display: block; width: 16px; height: 1.5px;
+      border-radius: 999px; background: currentColor;
+      transition: transform 0.25s ease, opacity 0.25s ease;
+    }
+    .nav-toggle[aria-expanded="true"] span:nth-child(1) { transform: translateY(5.5px) rotate(45deg); }
+    .nav-toggle[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .nav-toggle[aria-expanded="true"] span:nth-child(3) { transform: translateY(-5.5px) rotate(-45deg); }
+    .mobile-menu {
+      display: none; position: fixed; top: 60px; left: 0; right: 0; z-index: 90;
+      opacity: 0; pointer-events: none; transform: translateY(-10px);
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+    .mobile-menu.is-open { opacity: 1; pointer-events: auto; transform: translateY(0); }
+    .mobile-menu-inner {
+      background: rgba(247,246,243,0.98); backdrop-filter: blur(14px);
+      border-bottom: 0.5px solid var(--border); padding: 16px 20px 24px;
+      display: grid; gap: 10px;
+    }
+    .mobile-menu-inner a {
+      display: block; text-decoration: none; color: var(--ink);
+      background: var(--white); border: 0.5px solid var(--border);
+      border-radius: 14px; padding: 14px 16px; font-size: 15px;
+    }
+    .mobile-menu-inner .btn-nav { justify-content: center; border: none; padding: 14px 16px; }
+
+    /* ── Sections ────────────────────────────────────────── */
+    section { padding: 120px 32px; max-width: 1080px; margin: 0 auto; }
+
+    /* ── Hero ────────────────────────────────────────────── */
+    .hero {
+      padding-top: 172px; padding-bottom: 120px; text-align: center;
+    }
+    .hero-kana {
+      font-size: 13px; letter-spacing: 0.2em; color: var(--ink-3); margin-bottom: 28px;
+    }
+    .hero h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(48px, 7vw, 80px);
+      line-height: 1.06; letter-spacing: -0.025em;
+      color: var(--ink); margin-bottom: 24px;
+      max-width: 760px; margin-left: auto; margin-right: auto;
+    }
+    .hero h1 em { font-style: italic; color: var(--ink-2); }
+    .hero-sub {
+      font-size: 18px; color: var(--ink-2); font-weight: 300;
+      max-width: 520px; margin: 0 auto 48px; line-height: 1.65;
+    }
+    .hero-actions {
+      display: flex; align-items: center; gap: 16px; justify-content: center; flex-wrap: wrap;
+    }
+    .btn-primary {
+      display: inline-flex; align-items: center; gap: 8px;
+      padding: 14px 32px; background: var(--ink); color: var(--white);
+      border-radius: 100px; font-size: 15px; font-weight: 500;
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .btn-primary:hover { opacity: 0.75; }
+    .btn-ghost {
+      display: inline-flex; align-items: center;
+      font-size: 15px; color: var(--ink-2); text-decoration: none;
+      border-bottom: 1px solid var(--border); padding-bottom: 1px;
+      transition: color 0.2s, border-color 0.2s;
+    }
+    .btn-ghost:hover { color: var(--ink); border-color: var(--ink); }
+    .hero-stat {
+      margin-top: 52px; font-size: 13px; color: var(--ink-3);
+    }
+    .hero-stat b { color: var(--ink); font-weight: 500; }
+
+    /* ── Divider ─────────────────────────────────────────── */
+    .divider { height: 0.5px; background: var(--border); max-width: 1080px; margin: 0 auto; }
+
+    /* ── Typography helpers ──────────────────────────────── */
+    .section-label {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--ink-3); margin-bottom: 20px;
+    }
+    .section-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(30px, 4vw, 44px);
+      line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 16px;
+    }
+    .section-intro {
+      font-size: 16px; color: var(--ink-2); max-width: 520px; line-height: 1.75;
+    }
+
+    /* ── About layout ────────────────────────────────────── */
+    .about-layout {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 80px;
+      align-items: start; margin-top: 56px;
+    }
+    .about-text p { font-size: 16px; color: var(--ink-2); line-height: 1.8; margin-bottom: 16px; }
+
+    /* ── Attributes grid ─────────────────────────────────── */
+    .attr-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: var(--border); border-radius: var(--r); overflow: hidden;
+    }
+    .attr-cell { background: var(--white); padding: 24px 22px; }
+    .attr-icon  { font-size: 20px; margin-bottom: 10px; }
+    .attr-title { font-size: 14px; font-weight: 500; color: var(--ink); margin-bottom: 4px; }
+    .attr-desc  { font-size: 13px; color: var(--ink-3); line-height: 1.5; }
+
+    /* ── Steps ───────────────────────────────────────────── */
+    .steps-grid {
+      display: grid; grid-template-columns: repeat(3, 1fr); gap: 1px;
+      background: var(--border); border-radius: var(--r); overflow: hidden;
+      margin-top: 56px;
+    }
+    .step { background: var(--paper); padding: 36px 28px; }
+    .step.dark { background: var(--ink); }
+    .step-num {
+      font-family: 'DM Serif Display', serif;
+      font-size: 13px; color: var(--ink-3); margin-bottom: 16px; letter-spacing: 0.04em;
+    }
+    .step.dark .step-num { color: rgba(255,255,255,0.35); }
+    .step-title { font-size: 15px; font-weight: 500; color: var(--ink); margin-bottom: 10px; }
+    .step.dark .step-title { color: var(--white); }
+    .step-body  { font-size: 13px; color: var(--ink-2); line-height: 1.7; }
+    .step.dark .step-body  { color: rgba(255,255,255,0.5); }
+
+    /* ── Access pair ─────────────────────────────────────── */
+    .access-grid {
+      display: grid; grid-template-columns: 1fr 1fr; gap: 1px;
+      background: var(--border); border-radius: var(--r); overflow: hidden;
+      margin-top: 24px;
+    }
+    .access-cell { background: var(--white); padding: 40px 32px; }
+    .access-cell.dark { background: var(--ink); }
+    .access-badge {
+      display: inline-flex; font-size: 10px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      padding: 4px 12px; border-radius: 100px; margin-bottom: 20px;
+    }
+    .badge-free   { background: rgba(31,122,77,0.09); color: var(--accent); }
+    .badge-contrib{ background: rgba(255,255,255,0.12); color: rgba(255,255,255,0.6); }
+    .access-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 22px; line-height: 1.2; margin-bottom: 12px;
+    }
+    .access-cell      .access-title { color: var(--ink); }
+    .access-cell.dark .access-title { color: var(--white); }
+    .access-body { font-size: 14px; line-height: 1.7; }
+    .access-cell      .access-body { color: var(--ink-2); }
+    .access-cell.dark .access-body { color: rgba(255,255,255,0.55); }
+    .access-cell .btn-primary { margin-top: 24px; padding: 10px 24px; font-size: 14px; }
+    .btn-white {
+      display: inline-flex; align-items: center; gap: 6px;
+      margin-top: 24px; padding: 10px 24px;
+      background: var(--white); color: var(--ink);
+      border-radius: 100px; font-size: 14px; font-weight: 500;
+      text-decoration: none; transition: opacity 0.2s;
+    }
+    .btn-white:hover { opacity: 0.85; }
+
+    /* ── CTA ─────────────────────────────────────────────── */
+    .cta-shell { padding: 120px 32px; }
+    .cta-inner {
+      text-align: center; max-width: 640px; margin: 0 auto;
+    }
+    .cta-inner h2 {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(32px, 5vw, 52px);
+      line-height: 1.1; letter-spacing: -0.02em; margin-bottom: 20px;
+    }
+    .cta-inner p { font-size: 16px; color: var(--ink-2); margin-bottom: 36px; line-height: 1.7; }
+
+    /* ── Footer ──────────────────────────────────────────── */
+    footer {
+      border-top: 0.5px solid var(--border);
+      padding: 40px 32px;
+      display: flex; align-items: center; justify-content: space-between;
+      max-width: 1080px; margin: 0 auto;
+    }
+    .footer-copy { font-size: 13px; color: var(--ink-3); }
+    .footer-loc  { font-size: 13px; color: var(--ink-3); }
+
+    /* ── Reveal ──────────────────────────────────────────── */
+    .reveal { opacity: 0; transform: translateY(22px); transition: opacity 0.65s ease, transform 0.65s ease; }
+    .reveal.visible { opacity: 1; transform: none; }
+    .d1 { transition-delay: 0.08s; }
+    .d2 { transition-delay: 0.16s; }
+    .d3 { transition-delay: 0.24s; }
+
+    /* ── Responsive ──────────────────────────────────────── */
+    @media (max-width: 768px) {
+      nav { padding: 0 20px; }
+      .nav-links, .nav-right { display: none; }
+      .nav-toggle { display: inline-flex; }
+      .mobile-menu { display: block; }
+      section { padding: 80px 20px; }
+      .hero { padding-top: 130px; padding-bottom: 80px; }
+      .hero h1 { font-size: 40px; }
+      .hero-actions { flex-direction: column; align-items: center; }
+      .about-layout { grid-template-columns: 1fr; gap: 40px; }
+      .attr-grid { grid-template-columns: 1fr; }
+      .steps-grid { grid-template-columns: 1fr; }
+      .access-grid { grid-template-columns: 1fr; }
+      footer { flex-direction: column; gap: 8px; text-align: center; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .reveal { opacity: 1; transform: none; transition: none; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────── -->
+<nav>
+  <a href="index.html" class="nav-brand" aria-label="Honmoku Trees home">
+    <div class="brand-icon">🌳</div>
+    <span class="brand-name">Honmoku <em>Trees</em></span>
+  </a>
+  <ul class="nav-links">
+    <li><a href="#about">The project</a></li>
+    <li><a href="#contribute">Contribute</a></li>
+    <li><a href="map.html">Map</a></li>
+  </ul>
+  <div class="nav-right">
+    <a href="login.html" class="btn-nav ghost" id="nav-login-btn">Sign in to contribute</a>
+    <a href="map.html" class="btn-nav">Open map →</a>
+  </div>
+  <button class="nav-toggle" type="button" aria-expanded="false"
+          aria-controls="mobile-menu" aria-label="Open navigation">
+    <span></span><span></span><span></span>
+  </button>
+</nav>
+
+<div class="mobile-menu" id="mobile-menu">
+  <div class="mobile-menu-inner">
+    <a href="#about">The project</a>
+    <a href="#contribute">Contribute</a>
+    <a href="map.html">Open map</a>
+    <a href="login.html" class="btn-nav" id="mobile-login-btn">Sign in to contribute</a>
+  </div>
+</div>
+
+<!-- ── Hero ─────────────────────────────────────────────────────── -->
+<section class="hero">
+  <p class="hero-kana reveal">本牧の木々</p>
+  <h1 class="reveal d1">Every tree in Honmoku,<br><em>mapped.</em></h1>
+  <p class="hero-sub reveal d2">A community record of the trees, species, and canopy of Honmoku neighbourhood in Yokohama.</p>
+  <div class="hero-actions reveal d3">
+    <a href="map.html" class="btn-primary">Explore the map</a>
+    <a href="login.html" class="btn-ghost">Sign in to contribute</a>
+  </div>
+  <p class="hero-stat reveal d3" id="hero-stat">Loading…</p>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── About ────────────────────────────────────────────────────── -->
+<section id="about">
+  <p class="section-label reveal">The project</p>
+  <div class="about-layout">
+    <div class="about-text">
+      <h2 class="section-title reveal">A living record of Honmoku's urban forest</h2>
+      <p class="reveal">Honmoku is a quiet coastal neighbourhood in Yokohama — once an international settlement, now a place where old gardens and street trees carry decades of history in their rings.</p>
+      <p class="reveal">This project documents those trees: species, height, canopy spread, and estimated age. Each entry is a small act of attention — a way of saying <em>this tree was here, and someone noticed.</em></p>
+      <p class="reveal">The map is open to everyone. Contributions come from a small group of approved members and are reviewed before going live.</p>
+    </div>
+    <div class="attr-grid reveal">
+      <div class="attr-cell">
+        <div class="attr-icon">🌿</div>
+        <div class="attr-title">Species</div>
+        <div class="attr-desc">English, Japanese, and Latin names for every tree</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">📏</div>
+        <div class="attr-title">Height</div>
+        <div class="attr-desc">Estimated trunk-to-crown height in metres</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">🌳</div>
+        <div class="attr-title">Canopy</div>
+        <div class="attr-desc">Approximate canopy spread area in m²</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">⏳</div>
+        <div class="attr-title">Age</div>
+        <div class="attr-desc">Estimated age in years where known</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">📍</div>
+        <div class="attr-title">Location</div>
+        <div class="attr-desc">Precise GPS coordinates from the field</div>
+      </div>
+      <div class="attr-cell">
+        <div class="attr-icon">📝</div>
+        <div class="attr-title">Notes</div>
+        <div class="attr-desc">Field observations and photos</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── How it works ─────────────────────────────────────────────── -->
+<section id="contribute">
+  <p class="section-label reveal">How it works</p>
+  <h2 class="section-title reveal">Open to explore.<br>Reviewed before it's live.</h2>
+  <p class="section-intro reveal">Anyone can browse the map. Contributing data requires an approved account — and every submission is reviewed by the admin before it appears.</p>
+
+  <div class="steps-grid reveal">
+    <div class="step">
+      <p class="step-num">01</p>
+      <p class="step-title">Explore the map</p>
+      <p class="step-body">Browse every documented tree in Honmoku. Click any pin to see species, height, canopy data, and notes. No account needed.</p>
+    </div>
+    <div class="step dark">
+      <p class="step-num">02</p>
+      <p class="step-title">Get a contributor account</p>
+      <p class="step-body">Accounts are created manually by the project admin. Once approved, you receive credentials to sign in and contribute.</p>
+    </div>
+    <div class="step">
+      <p class="step-num">03</p>
+      <p class="step-title">Submit a change</p>
+      <p class="step-body">Add a new tree, edit an existing entry, or flag one for removal. Your change is queued for admin review before going live.</p>
+    </div>
+  </div>
+
+  <div class="access-grid reveal">
+    <div class="access-cell">
+      <span class="access-badge badge-free">Free · read-only</span>
+      <p class="access-title">Browse without an account</p>
+      <p class="access-body">The full map is open to everyone. View species names, heights, canopy areas, and field notes for every documented tree in Honmoku.</p>
+      <a href="map.html" class="btn-primary">Open the map →</a>
+    </div>
+    <div class="access-cell dark">
+      <span class="access-badge badge-contrib">Contributor</span>
+      <p class="access-title">Add and edit tree data</p>
+      <p class="access-body">Approved contributors can add new trees, edit records, and flag removals. All changes go through review before appearing on the map.</p>
+      <a href="login.html" class="btn-white">Sign in to contribute →</a>
+    </div>
+  </div>
+</section>
+
+<div class="divider"></div>
+
+<!-- ── CTA ──────────────────────────────────────────────────────── -->
+<section class="cta-shell">
+  <div class="cta-inner">
+    <h2 class="reveal">Start exploring</h2>
+    <p class="reveal">Hundreds of trees documented. More added every week. Zoom in, click around, and learn the trees of Honmoku.</p>
+    <a href="map.html" class="btn-primary reveal">Open the map →</a>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────────── -->
+<footer>
+  <p class="footer-copy">© 2026 Honmoku Trees</p>
+  <p class="footer-loc">本牧 · Yokohama, Japan</p>
+</footer>
+
+<script>
+const { createClient } = window.supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// Update CTA if already signed in
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) {
+    ['nav-login-btn', 'mobile-login-btn'].forEach(id => {
+      const el = document.getElementById(id);
+      if (el) { el.textContent = 'Open map'; el.href = 'map.html'; }
+    });
+  }
+});
+
+// Tree count
+async function loadStat() {
+  const el = document.getElementById('hero-stat');
+  try {
+    let n = null;
+    if (!SUPABASE_URL.includes('YOUR_PROJECT_ID')) {
+      const { count } = await sb.from('trees').select('*', { count: 'exact', head: true });
+      n = count;
+    }
+    if (n == null) {
+      const res = await fetch('trees.geojson');
+      const geo = await res.json();
+      n = geo.features?.length ?? 0;
+    }
+    el.innerHTML = `<b>${n.toLocaleString()}</b> trees documented across Honmoku`;
+  } catch (_) { el.textContent = ''; }
+}
+loadStat();
+
+// Mobile nav
+const toggleBtn  = document.querySelector('.nav-toggle');
+const mobileMenu = document.getElementById('mobile-menu');
+function setOpen(open) {
+  toggleBtn?.setAttribute('aria-expanded', String(open));
+  mobileMenu?.classList.toggle('is-open', open);
+  document.body.classList.toggle('nav-open', open);
+}
+toggleBtn?.addEventListener('click', () => setOpen(toggleBtn.getAttribute('aria-expanded') !== 'true'));
+document.querySelectorAll('.mobile-menu-inner a').forEach(l => l.addEventListener('click', () => setOpen(false)));
+window.addEventListener('resize', () => { if (window.innerWidth > 768) setOpen(false); });
+
+// Scroll reveal
+const prefersReduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const revEls = document.querySelectorAll('.reveal');
+if (prefersReduced || !('IntersectionObserver' in window)) {
+  revEls.forEach(el => el.classList.add('visible'));
+} else {
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => { if (!e.isIntersecting) return; e.target.classList.add('visible'); obs.unobserve(e.target); });
+  }, { threshold: 0.1 });
+  revEls.forEach(el => obs.observe(el));
+}
+</script>
 </body>
 </html>

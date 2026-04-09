@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Sign in — Honmoku Trees</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+
+  <style>
+    :root {
+      --paper:  #F7F6F3;
+      --white:  #FFFFFF;
+      --ink:    #1A1A1A;
+      --ink-2:  #555555;
+      --ink-3:  #999999;
+      --accent: #1F7A4D;
+      --red:    #dc2626;
+      --border: rgba(26,26,26,0.10);
+      --r:      14px;
+      --r-sm:   8px;
+      --shadow: 0 4px 28px rgba(0,0,0,0.08);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ─────────────────────────────────────────── */
+    nav {
+      position: fixed; top: 0; left: 0; right: 0;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      background: rgba(247,246,243,0.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 0.5px solid var(--border);
+      z-index: 10;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .brand-icon {
+      width: 30px; height: 30px;
+      background: var(--accent);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 15px;
+    }
+    .brand-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px; color: var(--ink); letter-spacing: -0.01em;
+    }
+    .brand-name em { color: var(--accent); font-style: normal; }
+    .nav-link {
+      font-size: 13px; color: var(--ink-2); text-decoration: none;
+      border-bottom: 1px solid transparent; padding-bottom: 1px;
+      transition: color 0.15s, border-color 0.15s;
+    }
+    .nav-link:hover { color: var(--ink); border-color: var(--border); }
+
+    /* ── Layout ──────────────────────────────────────── */
+    main {
+      min-height: 100vh;
+      display: flex; align-items: center; justify-content: center;
+      padding: 80px 20px 40px;
+    }
+
+    /* ── Card ────────────────────────────────────────── */
+    .card {
+      background: var(--white);
+      border: 0.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 48px 44px;
+      max-width: 400px; width: 100%;
+      box-shadow: var(--shadow);
+    }
+    .kicker {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.12em;
+      text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px;
+    }
+    h1 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 30px; color: var(--ink);
+      margin-bottom: 8px; letter-spacing: -0.02em;
+    }
+    .sub {
+      font-size: 14px; color: var(--ink-3);
+      margin-bottom: 32px; line-height: 1.6;
+    }
+
+    /* ── Form ────────────────────────────────────────── */
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--ink-3); margin-bottom: 5px;
+    }
+    .field input {
+      width: 100%; padding: 10px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--r-sm);
+      background: var(--white); color: var(--ink);
+      font-size: 14px; font-family: 'DM Sans', sans-serif;
+      transition: border-color 0.15s;
+    }
+    .field input:focus { outline: none; border-color: var(--accent); }
+
+    .error-box {
+      background: rgba(220,38,38,0.05);
+      border: 0.5px solid rgba(220,38,38,0.2);
+      border-radius: var(--r-sm);
+      padding: 10px 12px;
+      font-size: 13px; color: var(--red);
+      margin-bottom: 16px;
+      display: none;
+    }
+    .error-box.show { display: block; }
+
+    .btn-submit {
+      width: 100%; padding: 12px;
+      background: var(--ink); color: #fff;
+      border: none; border-radius: 100px;
+      font-family: 'DM Sans', sans-serif;
+      font-size: 15px; font-weight: 500;
+      cursor: pointer; transition: opacity 0.15s;
+      margin-top: 8px;
+    }
+    .btn-submit:hover { opacity: 0.8; }
+    .btn-submit:disabled { opacity: 0.5; cursor: default; }
+
+    /* ── Footer note ─────────────────────────────────── */
+    .card-footer {
+      margin-top: 28px; padding-top: 24px;
+      border-top: 0.5px solid var(--border);
+    }
+    .card-footer p { font-size: 13px; color: var(--ink-3); line-height: 1.6; }
+  </style>
+</head>
+<body>
+
+<nav>
+  <a href="index.html" class="nav-brand">
+    <div class="brand-icon">🌳</div>
+    <span class="brand-name">Honmoku <em>Trees</em></span>
+  </a>
+  <a href="map.html" class="nav-link">View map without signing in →</a>
+</nav>
+
+<main>
+  <div class="card">
+    <p class="kicker">Contributor access</p>
+    <h1>Sign in</h1>
+    <p class="sub">Use the credentials provided by the project admin. Accounts are created manually — contact the admin to request access.</p>
+
+    <div class="error-box" id="error-box" role="alert"></div>
+
+    <div class="field">
+      <label for="email">Email</label>
+      <input type="email" id="email" autocomplete="email" placeholder="you@example.com" />
+    </div>
+    <div class="field">
+      <label for="password">Password</label>
+      <input type="password" id="password" autocomplete="current-password" placeholder="••••••••" />
+    </div>
+
+    <button class="btn-submit" id="btn-submit">Sign in</button>
+
+    <div class="card-footer">
+      <p>Don't have an account? Contributor accounts are added manually by the project admin.</p>
+    </div>
+  </div>
+</main>
+
+<script>
+const { createClient } = window.supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// If already signed in, redirect immediately
+sb.auth.getSession().then(({ data: { session } }) => {
+  if (session) redirect();
+});
+
+function redirect() {
+  const p = new URLSearchParams(window.location.search);
+  window.location.href = p.get('return') || 'map.html';
+}
+
+document.getElementById('btn-submit').addEventListener('click', doLogin);
+document.getElementById('password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') doLogin();
+});
+
+async function doLogin() {
+  const email    = document.getElementById('email').value.trim();
+  const password = document.getElementById('password').value;
+  const errEl    = document.getElementById('error-box');
+  errEl.classList.remove('show');
+
+  if (!email || !password) {
+    errEl.textContent = 'Please enter your email and password.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const btn = document.getElementById('btn-submit');
+  btn.textContent = 'Signing in…';
+  btn.disabled    = true;
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+
+  if (error) {
+    btn.textContent = 'Sign in';
+    btn.disabled    = false;
+    errEl.textContent = error.message.includes('Invalid login credentials')
+      ? 'Incorrect email or password. Contact the admin if you need access.'
+      : error.message;
+    errEl.classList.add('show');
+  } else {
+    redirect();
+  }
+}
+</script>
+</body>
+</html>

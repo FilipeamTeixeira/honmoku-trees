@@ -1,0 +1,944 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Map — Honmoku Trees</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
+  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+
+  <style>
+    :root {
+      --paper:        #F7F6F3;
+      --white:        #FFFFFF;
+      --ink:          #1A1A1A;
+      --ink-2:        #555555;
+      --ink-3:        #999999;
+      --accent:       #1F7A4D;
+      --amber:        #d97706;
+      --red:          #dc2626;
+      --border:       rgba(26,26,26,0.10);
+      --r:            14px;
+      --r-sm:         8px;
+      --shadow:       0 4px 28px rgba(0,0,0,0.10);
+    }
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #0a0a0a;
+      color: var(--ink);
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Map ─────────────────────────────────────────────── */
+    #map { position: fixed; inset: 0; z-index: 0; }
+
+    /* ── Header ──────────────────────────────────────────── */
+    header {
+      position: fixed; top: 0; left: 0; right: 0; z-index: 20;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 24px;
+      background: rgba(247,246,243,0.92);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-bottom: 0.5px solid var(--border);
+      gap: 12px;
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none; flex-shrink: 0;
+    }
+    .brand-icon {
+      width: 30px; height: 30px; background: var(--accent); border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 15px; flex-shrink: 0;
+    }
+    .brand-name {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px; color: var(--ink); letter-spacing: -0.01em;
+    }
+    .brand-name em { color: var(--accent); font-style: normal; }
+
+    .nav-stats { font-size: 13px; color: var(--ink-3); flex: 1; text-align: center; white-space: nowrap; }
+    .nav-stats b { color: var(--ink); font-weight: 500; }
+
+    .nav-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
+
+    /* ── Buttons ─────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 16px; border-radius: 100px;
+      border: 0.5px solid var(--border);
+      background: var(--white); color: var(--ink-2);
+      font-family: 'DM Sans', sans-serif; font-size: 13px;
+      cursor: pointer; transition: all 0.15s; white-space: nowrap;
+      text-decoration: none; line-height: 1.4;
+    }
+    .btn:hover { background: var(--paper); color: var(--ink); }
+    .btn-primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .btn-primary:hover { opacity: 0.8; background: var(--ink); color: #fff; }
+    .btn-accent  { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn-accent:hover  { opacity: 0.85; background: var(--accent); }
+    .btn-danger  { background: var(--red);    color: #fff; border-color: var(--red); }
+    .btn-danger:hover  { opacity: 0.85; }
+    .btn.active-add    { background: var(--accent); color: #fff; border-color: var(--accent); }
+    .btn.active-delete { background: var(--red);    color: #fff; border-color: var(--red); }
+
+    /* ── Mode banner ─────────────────────────────────────── */
+    #mode-banner {
+      position: fixed; top: 60px; left: 0; right: 0; z-index: 15;
+      text-align: center; padding: 7px 16px; font-size: 13px; font-weight: 500;
+      display: none;
+    }
+    #mode-banner.show-add    { display: block; background: rgba(31,122,77,0.9);  color: #fff; }
+    #mode-banner.show-delete { display: block; background: rgba(220,38,38,0.9);  color: #fff; }
+    #mode-banner button.apply-btn {
+      margin-left: 14px; padding: 3px 14px; border-radius: 100px;
+      background: rgba(255,255,255,0.22); color: #fff; border: 1px solid rgba(255,255,255,0.4);
+      font-family: 'DM Sans', sans-serif; font-size: 12px; font-weight: 600;
+      cursor: pointer; transition: background 0.15s;
+    }
+    #mode-banner button.apply-btn:hover { background: rgba(255,255,255,0.35); }
+
+    /* ── Panel ───────────────────────────────────────────── */
+    .panel {
+      position: fixed; top: 60px; right: 0; bottom: 0; width: 320px;
+      background: var(--paper); border-left: 0.5px solid var(--border);
+      z-index: 18; transform: translateX(100%);
+      transition: transform 0.25s ease;
+      overflow-y: auto; padding: 24px;
+      box-shadow: -8px 0 40px rgba(0,0,0,0.08);
+    }
+    .panel.open { transform: translateX(0); }
+
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between; margin-bottom: 20px;
+    }
+    .panel-title { font-family: 'DM Serif Display', serif; font-size: 18px; color: var(--ink); }
+    .panel-close {
+      width: 30px; height: 30px; border: 0.5px solid var(--border); border-radius: 50%;
+      background: var(--white); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--ink-3); font-size: 14px; transition: all 0.15s; flex-shrink: 0;
+    }
+    .panel-close:hover { background: var(--paper); color: var(--ink); }
+
+    /* Role badge inside panel */
+    .role-note {
+      border-radius: var(--r-sm); padding: 10px 12px; margin-bottom: 16px;
+      font-size: 12px; line-height: 1.5;
+    }
+    .role-note.admin  { background: rgba(31,122,77,0.07); border: 0.5px solid rgba(31,122,77,0.2); color: var(--accent); }
+    .role-note.editor { background: rgba(217,119,6,0.07);  border: 0.5px solid rgba(217,119,6,0.2);  color: var(--amber);  }
+
+    /* Fields */
+    .field { margin-bottom: 12px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--ink-3); margin-bottom: 4px;
+    }
+    .field input, .field textarea {
+      width: 100%; padding: 9px 12px;
+      border-radius: var(--r-sm); border: 0.5px solid var(--border);
+      background: var(--white); color: var(--ink);
+      font-size: 14px; font-family: 'DM Sans', sans-serif;
+      transition: border-color 0.15s;
+    }
+    .field input:focus, .field textarea:focus { outline: none; border-color: var(--accent); }
+    .field input:read-only, .field textarea:read-only { background: var(--paper); color: var(--ink-2); cursor: default; }
+    .field textarea { resize: vertical; min-height: 68px; }
+
+    .panel-divider { height: 0.5px; background: var(--border); margin: 18px 0; }
+
+    .panel-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+    .panel-actions .btn { justify-content: center; border-radius: var(--r-sm); padding: 10px; }
+
+    /* ── User chip ───────────────────────────────────────── */
+    .user-chip {
+      display: flex; align-items: center; gap: 8px; padding: 5px 12px;
+      border: 0.5px solid var(--border); border-radius: 100px;
+      background: var(--white); font-size: 13px; color: var(--ink-2);
+    }
+    .user-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .logout-btn {
+      border: none; background: none; cursor: pointer; color: var(--ink-3);
+      font-size: 12px; padding: 0 0 0 4px; transition: color 0.15s; line-height: 1;
+    }
+    .logout-btn:hover { color: var(--ink); }
+
+    /* ── Legend ──────────────────────────────────────────── */
+    .legend {
+      position: fixed; bottom: 36px; left: 24px; z-index: 10;
+      background: rgba(247,246,243,0.92); backdrop-filter: blur(12px);
+      border: 0.5px solid var(--border); border-radius: var(--r);
+      padding: 14px 18px; box-shadow: var(--shadow);
+    }
+    .legend-kicker {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink-3); margin-bottom: 10px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 8px; padding: 2px 0; font-size: 12px; color: var(--ink-2); }
+    .legend-dot  { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+    .legend-hr   { height: 0.5px; background: var(--border); margin: 8px 0; }
+
+    /* ── Loading ─────────────────────────────────────────── */
+    #loading {
+      position: fixed; inset: 0; z-index: 100; background: var(--paper);
+      display: flex; flex-direction: column; align-items: center; justify-content: center;
+      gap: 16px; transition: opacity 0.4s ease;
+    }
+    #loading.hidden { opacity: 0; pointer-events: none; }
+    .loading-icon { width: 48px; height: 48px; background: var(--accent); border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 24px; }
+    .loading-title { font-family: 'DM Serif Display', serif; font-size: 22px; color: var(--ink); }
+    .loading-sub   { font-size: 14px; color: var(--ink-3); }
+    .spinner { width: 30px; height: 30px; border: 2px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Cursors ─────────────────────────────────────────── */
+    .cursor-add    .maplibregl-canvas { cursor: crosshair  !important; }
+    .cursor-delete .maplibregl-canvas { cursor: pointer     !important; }
+
+    /* ── MapLibre control overrides ──────────────────────── */
+    .maplibregl-ctrl-group {
+      border-radius: var(--r-sm) !important;
+      border: 0.5px solid var(--border) !important;
+      box-shadow: var(--shadow) !important;
+      background: rgba(247,246,243,0.92) !important;
+      backdrop-filter: blur(12px);
+    }
+    .maplibregl-ctrl-group button { color: var(--ink-2) !important; }
+    .maplibregl-ctrl-attrib { font-size: 10px; background: rgba(247,246,243,0.75) !important; }
+
+    /* ── Toast ───────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 36px; left: 50%;
+      transform: translateX(-50%) translateY(16px);
+      background: var(--ink); color: #fff;
+      border-radius: 100px; padding: 10px 22px;
+      font-size: 13px; z-index: 60;
+      opacity: 0; transition: all 0.25s ease; pointer-events: none; white-space: nowrap;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+  </style>
+</head>
+<body>
+
+<!-- Loading screen -->
+<div id="loading">
+  <div class="loading-icon">🌳</div>
+  <div class="loading-title">Honmoku Trees</div>
+  <div class="spinner"></div>
+  <div class="loading-sub" id="loading-sub">Loading…</div>
+</div>
+
+<!-- Header -->
+<header>
+  <a href="index.html" class="nav-brand">
+    <div class="brand-icon">🌳</div>
+    <span class="brand-name">Honmoku <em>Trees</em></span>
+  </a>
+  <div class="nav-stats" id="stats"></div>
+  <nav class="nav-actions" id="nav-actions" aria-label="Map tools"></nav>
+</header>
+
+<!-- Mode banner -->
+<div id="mode-banner" role="status" aria-live="polite"></div>
+
+<!-- Map -->
+<div id="map"></div>
+
+<!-- Side panel -->
+<aside class="panel" id="panel" aria-label="Tree details">
+  <div class="panel-header">
+    <span class="panel-title" id="panel-title">Tree details</span>
+    <button class="panel-close" id="btn-close" aria-label="Close">✕</button>
+  </div>
+
+  <div id="role-note" style="display:none"></div>
+
+  <div class="field"><label>Species (English)</label><input type="text" id="f-species-en" placeholder="e.g. Japanese Black Pine" /></div>
+  <div class="field"><label>Species (Japanese)</label><input type="text" id="f-species-jp" placeholder="e.g. クロマツ" /></div>
+  <div class="field"><label>Species (Latin)</label><input type="text" id="f-species-lat" placeholder="e.g. Pinus thunbergii" /></div>
+  <div class="field"><label>Height (m)</label><input type="number" id="f-height" step="0.1" min="0" /></div>
+  <div class="field"><label>Canopy area (m²)</label><input type="number" id="f-canopy" step="0.1" min="0" /></div>
+  <div class="field"><label>Estimated age (years)</label><input type="number" id="f-age" min="0" /></div>
+  <div class="field"><label>Notes</label><textarea id="f-notes" placeholder="Any observations…"></textarea></div>
+  <div class="field"><label>Photo URL</label><input type="url" id="f-photo" placeholder="https://…" /></div>
+
+  <div class="panel-actions" id="panel-actions"></div>
+</aside>
+
+<!-- Legend -->
+<div class="legend" aria-label="Map legend">
+  <div class="legend-kicker">Tree height</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#86efac"></div>&lt; 5 m</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div>5 – 10 m</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div>10 – 20 m</div>
+  <div class="legend-item"><div class="legend-dot" style="background:#166534"></div>&gt; 20 m</div>
+  <div class="legend-hr"></div>
+  <div class="legend-item"><div class="legend-dot" style="background:#d97706;opacity:.85"></div>Pending review</div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ============================================================================
+// CONFIG
+// ============================================================================
+const LOCAL_MODE = SUPABASE_URL.includes('YOUR_PROJECT_ID');
+
+const { createClient } = window.supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================================================
+// STATE
+// ============================================================================
+let treeData    = { type: 'FeatureCollection', features: [] };
+let pendingData = { type: 'FeatureCollection', features: [] };
+let editingId   = null;
+let editingLng  = null;
+let editingLat  = null;
+let mode        = 'select';       // 'select' | 'add' | 'delete'
+let addCount    = 0;
+let pendingDeletes = new Set();   // ids of trees marked for deletion
+let currentUser = null;
+let userRole    = null;           // 'admin' | 'editor' | null
+let mapReady    = false;
+
+// ============================================================================
+// MAP
+// ============================================================================
+const map = new maplibregl.Map({
+  container: 'map',
+  style: {
+    version: 8,
+    sources: {
+      satellite: {
+        type: 'raster',
+        tiles: ['https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg'],
+        tileSize: 256, maxzoom: 18, attribution: '国土地理院'
+      }
+    },
+    layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }]
+  },
+  center: [139.6585, 35.4230], zoom: 15, maxZoom: 21
+});
+map.addControl(new maplibregl.NavigationControl(), 'top-right');
+map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
+
+// ============================================================================
+// AUTH
+// ============================================================================
+sb.auth.onAuthStateChange(async (_event, session) => {
+  currentUser = session?.user ?? null;
+  userRole    = null;
+
+  if (currentUser && !LOCAL_MODE) {
+    const { data } = await sb
+      .from('user_roles').select('role')
+      .eq('user_id', currentUser.id).maybeSingle();
+    userRole = data?.role ?? 'editor';
+  }
+
+  renderNav();
+  if (mapReady) await loadTrees();
+});
+
+// ============================================================================
+// MAP LOAD
+// ============================================================================
+map.on('load', async () => {
+  mapReady = true;
+
+  // Sources
+  map.addSource('trees',   { type: 'geojson', data: treeData });
+  map.addSource('pending', { type: 'geojson', data: pendingData });
+
+  // Approved trees (height-coloured)
+  map.addLayer({
+    id: 'tree-circles', type: 'circle', source: 'trees',
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 3, 16, 6, 19, 12],
+      'circle-color': ['step', ['coalesce', ['get', 'height_m'], 0],
+        '#86efac', 5, '#4ade80', 10, '#16a34a', 20, '#166534'],
+      'circle-opacity': 0.9,
+      'circle-stroke-width': 1, 'circle-stroke-color': 'rgba(255,255,255,0.15)'
+    }
+  });
+
+  // Trees marked for deletion (red overlay)
+  map.addLayer({
+    id: 'tree-delete-hl', type: 'circle', source: 'trees',
+    filter: ['==', ['get', 'id'], -1],
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 4, 16, 8, 19, 14],
+      'circle-color': '#ef4444', 'circle-opacity': 0.92,
+      'circle-stroke-width': 2.5, 'circle-stroke-color': '#fff'
+    }
+  });
+
+  // Selection ring
+  map.addLayer({
+    id: 'tree-selected', type: 'circle', source: 'trees',
+    filter: ['==', ['get', 'id'], -1],
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 6, 16, 10, 19, 18],
+      'circle-color': 'transparent',
+      'circle-stroke-width': 2.5, 'circle-stroke-color': '#fff'
+    }
+  });
+
+  // Pending changes (amber)
+  map.addLayer({
+    id: 'pending-circles', type: 'circle', source: 'pending',
+    filter: ['!=', ['get', 'action'], 'delete'],
+    paint: {
+      'circle-radius': ['interpolate', ['linear'], ['zoom'], 13, 4, 16, 7, 19, 14],
+      'circle-color': '#d97706', 'circle-opacity': 0.82,
+      'circle-stroke-width': 1.5, 'circle-stroke-color': 'rgba(255,255,255,0.5)'
+    }
+  });
+
+  // ── Click: approved tree ───────────────────────────────
+  map.on('click', 'tree-circles', (e) => {
+    e.preventDefault();
+    const id = e.features[0].properties.id;
+
+    if (mode === 'delete') {
+      // Toggle deletion mark
+      if (pendingDeletes.has(id)) {
+        pendingDeletes.delete(id);
+      } else {
+        pendingDeletes.add(id);
+      }
+      updateDeleteHighlight();
+      updateBanner();
+      return;
+    }
+
+    if (mode === 'add') setMode('select');
+    openTreePanel(id);
+  });
+
+  // ── Click: pending pin ─────────────────────────────────
+  map.on('click', 'pending-circles', (e) => {
+    e.preventDefault();
+    openPendingPanel(e.features[0].properties);
+  });
+
+  // ── Click: empty map ───────────────────────────────────
+  map.on('click', (e) => {
+    if (e.defaultPrevented) return;
+    if (mode === 'add') { placeNewTree(e.lngLat.lng, e.lngLat.lat); return; }
+    if (mode === 'select') closePanel();
+  });
+
+  map.on('mouseenter', 'tree-circles', () => {
+    map.getCanvas().style.cursor = mode === 'select' ? 'pointer' : '';
+  });
+  map.on('mouseleave', 'tree-circles', () => {
+    if (mode === 'select') map.getCanvas().style.cursor = '';
+  });
+  map.on('mouseenter', 'pending-circles', () => { map.getCanvas().style.cursor = 'pointer'; });
+  map.on('mouseleave', 'pending-circles', () => {
+    map.getCanvas().style.cursor = mode === 'delete' ? 'pointer' : (mode === 'add' ? 'crosshair' : '');
+  });
+
+  await loadTrees();
+});
+
+// ============================================================================
+// DATA LOADING
+// ============================================================================
+async function loadTrees() {
+  document.getElementById('loading-sub').textContent = 'Loading tree data…';
+  try {
+    let loadedFromSupabase = false;
+
+    if (!LOCAL_MODE) {
+      try {
+        // Timeout after 8s in case Supabase hangs
+        const timeout = new Promise((_, reject) =>
+          setTimeout(() => reject(new Error('Supabase timeout')), 8000)
+        );
+        const query = sb.from('trees').select('*');
+        const { data, error } = await Promise.race([query, timeout]);
+        if (error) throw error;
+        treeData.features = (data || []).map(t => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [t.lng, t.lat] },
+          properties: t
+        }));
+        loadedFromSupabase = true;
+      } catch (sbErr) {
+        console.warn('Supabase unavailable, falling back to trees.geojson:', sbErr.message);
+        toast('Using local data (Supabase unreachable)');
+      }
+    }
+
+    if (!loadedFromSupabase) {
+      const res = await fetch('trees.geojson');
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const geo = await res.json();
+      treeData.features = geo.features.map((f, i) => ({
+        ...f, properties: { ...f.properties, id: f.properties.id ?? (i + 1) }
+      }));
+    }
+
+    map.getSource('trees').setData(treeData);
+    updateStats();
+    if (loadedFromSupabase) await reloadPending();
+  } catch (err) {
+    console.error('Load error:', err);
+    toast('Could not load tree data');
+  } finally {
+    const l = document.getElementById('loading');
+    l.classList.add('hidden');
+    setTimeout(() => l.remove(), 450);
+  }
+}
+
+async function reloadPending() {
+  if (LOCAL_MODE || !currentUser) {
+    pendingData.features = [];
+    map.getSource('pending')?.setData(pendingData);
+    return;
+  }
+  let q = sb.from('pending_changes').select('*').eq('status', 'pending');
+  if (userRole !== 'admin') q = q.eq('submitted_by', currentUser.id);
+  const { data } = await q;
+  pendingData.features = (data || [])
+    .filter(p => p.lat != null && p.lng != null)
+    .map(p => ({
+      type: 'Feature',
+      geometry: { type: 'Point', coordinates: [p.lng, p.lat] },
+      properties: { ...p }
+    }));
+  map.getSource('pending').setData(pendingData);
+}
+
+// ============================================================================
+// NAV RENDER
+// ============================================================================
+function renderNav() {
+  const nav = document.getElementById('nav-actions');
+  nav.innerHTML = '';
+
+  if (LOCAL_MODE) {
+    const note = document.createElement('span');
+    note.style.cssText = 'font-size:12px;color:var(--ink-3);padding:0 4px';
+    note.textContent = 'Local mode · read only';
+    nav.appendChild(note);
+    return;
+  }
+
+  if (!currentUser) {
+    const a = document.createElement('a');
+    a.href = 'login.html?return=map.html';
+    a.className = 'btn btn-primary';
+    a.textContent = 'Sign in to contribute';
+    nav.appendChild(a);
+    return;
+  }
+
+  // Contributor/admin tools
+  const addBtn = mkBtn('+ Add tree',    'btn', () => setMode(mode === 'add'    ? 'select' : 'add'));
+  addBtn.id = 'btn-add';
+  const delBtn = mkBtn('✕ Delete trees','btn', () => setMode(mode === 'delete' ? 'select' : 'delete'));
+  delBtn.id = 'btn-delete-mode';
+  nav.appendChild(addBtn);
+  nav.appendChild(delBtn);
+
+  // Admin review link (async)
+  if (userRole === 'admin') {
+    sb.from('pending_changes').select('*', { count: 'exact', head: true })
+      .eq('status', 'pending').then(({ count }) => {
+        if (count > 0) {
+          const a = document.createElement('a');
+          a.href = 'admin.html'; a.className = 'btn btn-accent';
+          a.textContent = `⚙ Review (${count})`;
+          nav.insertBefore(a, chip);
+        }
+      });
+  }
+
+  // User chip
+  const chip = document.createElement('div');
+  chip.className = 'user-chip';
+  const dot  = document.createElement('div'); dot.className  = 'user-dot';
+  const name = document.createElement('span'); name.textContent = currentUser.email.split('@')[0];
+  const logoutBtn = document.createElement('button');
+  logoutBtn.className   = 'logout-btn'; logoutBtn.textContent = '✕'; logoutBtn.title = 'Sign out';
+  logoutBtn.addEventListener('click', async () => {
+    await sb.auth.signOut(); setMode('select'); closePanel(); renderNav(); toast('Signed out');
+  });
+  chip.appendChild(dot); chip.appendChild(name); chip.appendChild(logoutBtn);
+  nav.appendChild(chip);
+}
+
+function mkBtn(label, cls, handler) {
+  const b = document.createElement('button');
+  b.className = cls; b.textContent = label;
+  if (handler) b.addEventListener('click', handler);
+  return b;
+}
+
+// ============================================================================
+// MODE MANAGEMENT
+// ============================================================================
+function setMode(newMode) {
+  // Clear delete marks and add count when leaving a mode
+  if (mode === 'delete') { pendingDeletes.clear(); updateDeleteHighlight(); }
+  addCount = 0;
+  mode = newMode;
+
+  const mapEl  = document.getElementById('map');
+  const addBtn = document.getElementById('btn-add');
+  const delBtn = document.getElementById('btn-delete-mode');
+  const banner = document.getElementById('mode-banner');
+
+  mapEl.classList.remove('cursor-add', 'cursor-delete');
+  addBtn?.classList.remove('active-add');
+  delBtn?.classList.remove('active-delete');
+  banner.className = '';
+  banner.textContent = '';
+
+  if (mode === 'add') {
+    mapEl.classList.add('cursor-add');
+    addBtn?.classList.add('active-add');
+    closePanel();
+  } else if (mode === 'delete') {
+    mapEl.classList.add('cursor-delete');
+    delBtn?.classList.add('active-delete');
+    closePanel();
+  }
+
+  updateBanner();
+}
+
+function updateBanner() {
+  const banner = document.getElementById('mode-banner');
+  const isEditor = currentUser && userRole !== 'admin';
+  const suffix   = isEditor ? ' (submitted for review)' : '';
+
+  if (mode === 'add') {
+    banner.className = 'show-add';
+    banner.textContent = `+ Click any spot on the map to add a tree${suffix} · ${addCount} added · Esc to exit`;
+  } else if (mode === 'delete') {
+    const n = pendingDeletes.size;
+    if (n === 0) {
+      banner.className = 'show-delete';
+      banner.textContent = '✕ Click trees to mark them for deletion · Esc to cancel';
+    } else {
+      banner.className = 'show-delete';
+      banner.innerHTML =
+        `✕ <strong>${n} tree${n !== 1 ? 's' : ''} marked</strong> for deletion${suffix} ·` +
+        ` <button class="apply-btn" onclick="applyDeletes()">Apply deletions</button>` +
+        ` · Esc to cancel`;
+    }
+  }
+}
+
+function updateDeleteHighlight() {
+  const ids = [...pendingDeletes];
+  map.setFilter('tree-delete-hl',
+    ids.length > 0 ? ['in', ['get', 'id'], ['literal', ids]] : ['==', ['get', 'id'], -1]
+  );
+}
+
+// ============================================================================
+// TREE ACTIONS
+// ============================================================================
+function placeNewTree(lng, lat) {
+  editingId  = null;
+  editingLng = lng;
+  editingLat = lat;
+  addCount++;
+  updateBanner();
+
+  document.getElementById('panel-title').textContent = 'New tree';
+  clearFields();
+  renderPanelActions('new');
+  document.getElementById('panel').classList.add('open');
+}
+
+function openTreePanel(id) {
+  const f = treeData.features.find(f => f.properties.id === id);
+  if (!f) return;
+  editingId  = id;
+  editingLng = f.geometry.coordinates[0];
+  editingLat = f.geometry.coordinates[1];
+
+  map.setFilter('tree-selected', ['==', ['get', 'id'], id]);
+  document.getElementById('panel-title').textContent = `Tree #${id}`;
+  fillFields(f.properties);
+  renderPanelActions('edit');
+  document.getElementById('panel').classList.add('open');
+}
+
+function openPendingPanel(props) {
+  editingId = null;
+  const label = { add: 'Pending addition', edit: 'Pending edit', delete: 'Pending removal' };
+  document.getElementById('panel-title').textContent = label[props.action] || 'Pending change';
+  fillFields(props);
+
+  const rn = document.getElementById('role-note');
+  rn.className = 'role-note editor';
+  rn.innerHTML = `<strong>⏳ Awaiting admin review</strong><br>Submitted by <em>${props.submitted_by_email || 'you'}</em>. Changes go live once approved.`;
+  rn.style.display = 'block';
+
+  renderPanelActions('readonly');
+  document.getElementById('panel').classList.add('open');
+}
+
+async function saveTree() {
+  const props = readFields();
+
+  if (LOCAL_MODE) {
+    // Local preview: apply in-memory only
+    if (editingId) {
+      const f = treeData.features.find(f => f.properties.id === editingId);
+      if (f) Object.assign(f.properties, props);
+    } else {
+      treeData.features.push({ type: 'Feature',
+        geometry: { type: 'Point', coordinates: [editingLng, editingLat] },
+        properties: { id: Date.now(), ...props }
+      });
+    }
+    map.getSource('trees').setData(treeData);
+    updateStats(); closePanel(); toast('Saved (local mode — not persisted to database)');
+    return;
+  }
+
+  const isAdmin = userRole === 'admin';
+
+  if (isAdmin) {
+    if (editingId) {
+      const { error } = await sb.from('trees')
+        .update({ ...props, lat: editingLat, lng: editingLng }).eq('id', editingId);
+      if (error) { toast('Save failed: ' + error.message); return; }
+      const f = treeData.features.find(f => f.properties.id === editingId);
+      if (f) { Object.assign(f.properties, props); f.geometry.coordinates = [editingLng, editingLat]; }
+    } else {
+      const { data, error } = await sb.from('trees')
+        .insert({ ...props, lat: editingLat, lng: editingLng }).select().single();
+      if (error) { toast('Save failed: ' + error.message); return; }
+      treeData.features.push({ type: 'Feature',
+        geometry: { type: 'Point', coordinates: [editingLng, editingLat] },
+        properties: data
+      });
+    }
+    map.getSource('trees').setData(treeData);
+    updateStats(); closePanel(); toast('Saved');
+
+  } else if (currentUser) {
+    const action = editingId ? 'edit' : 'add';
+    const { error } = await sb.from('pending_changes').insert({
+      tree_id:             editingId ? String(editingId) : null,
+      action,
+      submitted_by:        currentUser.id,
+      submitted_by_email:  currentUser.email,
+      lat: editingLat, lng: editingLng, ...props
+    });
+    if (error) { toast('Submission failed: ' + error.message); return; }
+    await reloadPending(); closePanel();
+    toast('Submitted for review — an admin will approve it before it appears on the map');
+  }
+}
+
+async function applyDeletes() {
+  if (pendingDeletes.size === 0) return;
+  const ids = [...pendingDeletes];
+
+  if (LOCAL_MODE) {
+    treeData.features = treeData.features.filter(f => !pendingDeletes.has(f.properties.id));
+    map.getSource('trees').setData(treeData);
+    pendingDeletes.clear(); updateDeleteHighlight();
+    setMode('select'); updateStats();
+    toast(`${ids.length} tree${ids.length !== 1 ? 's' : ''} removed (local mode)`);
+    return;
+  }
+
+  if (userRole === 'admin') {
+    const { error } = await sb.from('trees').delete().in('id', ids);
+    if (error) { toast('Delete failed: ' + error.message); return; }
+    treeData.features = treeData.features.filter(f => !pendingDeletes.has(f.properties.id));
+    map.getSource('trees').setData(treeData);
+    updateStats();
+    pendingDeletes.clear(); updateDeleteHighlight();
+    setMode('select');
+    toast(`${ids.length} tree${ids.length !== 1 ? 's' : ''} removed`);
+
+  } else if (currentUser) {
+    const rows = ids.map(id => {
+      const f = treeData.features.find(f => f.properties.id === id);
+      return { tree_id: String(id), action: 'delete', submitted_by: currentUser.id,
+               submitted_by_email: currentUser.email,
+               lat: f?.geometry.coordinates[1], lng: f?.geometry.coordinates[0] };
+    });
+    const { error } = await sb.from('pending_changes').insert(rows);
+    if (error) { toast('Submission failed: ' + error.message); return; }
+    await reloadPending();
+    pendingDeletes.clear(); updateDeleteHighlight();
+    setMode('select');
+    toast(`${ids.length} deletion request${ids.length !== 1 ? 's' : ''} submitted for review`);
+  }
+}
+
+// ============================================================================
+// PANEL HELPERS
+// ============================================================================
+const FIELDS = {
+  'f-species-en':  { prop: 'species_en',  type: 'text'   },
+  'f-species-jp':  { prop: 'species_jp',  type: 'text'   },
+  'f-species-lat': { prop: 'species_lat', type: 'text'   },
+  'f-height':      { prop: 'height_m',    type: 'float'  },
+  'f-canopy':      { prop: 'canopy_m2',   type: 'float'  },
+  'f-age':         { prop: 'age_years',   type: 'int'    },
+  'f-notes':       { prop: 'notes',       type: 'text'   },
+  'f-photo':       { prop: 'photo_url',   type: 'text'   }
+};
+
+function fillFields(p) {
+  document.getElementById('f-species-en').value  = p.species_en  || '';
+  document.getElementById('f-species-jp').value  = p.species_jp  || '';
+  document.getElementById('f-species-lat').value = p.species_lat || '';
+  document.getElementById('f-height').value      = p.height_m    ?? '';
+  document.getElementById('f-canopy').value      = p.canopy_m2   ?? '';
+  document.getElementById('f-age').value         = p.age_years   ?? '';
+  document.getElementById('f-notes').value       = p.notes       || '';
+  document.getElementById('f-photo').value       = p.photo_url   || '';
+}
+
+function clearFields() {
+  Object.keys(FIELDS).forEach(id => { document.getElementById(id).value = ''; });
+}
+
+function readFields() {
+  return {
+    species_en:  document.getElementById('f-species-en').value.trim()  || null,
+    species_jp:  document.getElementById('f-species-jp').value.trim()  || null,
+    species_lat: document.getElementById('f-species-lat').value.trim() || null,
+    height_m:    parseFloat(document.getElementById('f-height').value) || null,
+    canopy_m2:   parseFloat(document.getElementById('f-canopy').value) || null,
+    age_years:   parseInt(document.getElementById('f-age').value)      || null,
+    notes:       document.getElementById('f-notes').value.trim()       || null,
+    photo_url:   document.getElementById('f-photo').value.trim()       || null
+  };
+}
+
+function setReadOnly(ro) {
+  Object.keys(FIELDS).forEach(id => { document.getElementById(id).readOnly = ro; });
+}
+
+function renderPanelActions(ctx) {
+  // ctx: 'new' | 'edit' | 'readonly'
+  const el = document.getElementById('panel-actions');
+  el.innerHTML = '';
+  const rn = document.getElementById('role-note');
+  rn.style.display = 'none';
+
+  if (ctx === 'readonly') {
+    setReadOnly(true);
+    el.appendChild(mkBtn('Close', 'btn', closePanel));
+    return;
+  }
+
+  const canEdit = currentUser || LOCAL_MODE;
+  setReadOnly(!canEdit);
+
+  if (!canEdit) {
+    const a = document.createElement('a');
+    a.href = 'login.html?return=map.html'; a.className = 'btn btn-primary';
+    a.textContent = 'Sign in to edit'; a.style.justifyContent = 'center';
+    el.appendChild(a);
+    el.appendChild(mkBtn('Close', 'btn', closePanel));
+    return;
+  }
+
+  // Role note
+  if (!LOCAL_MODE) {
+    rn.style.display = 'block';
+    if (userRole === 'admin') {
+      rn.className = 'role-note admin';
+      rn.textContent = '✓ Admin — changes save directly to the map.';
+    } else {
+      rn.className = 'role-note editor';
+      rn.textContent = '📨 Contributor — your changes will be submitted for admin review before appearing on the map.';
+    }
+  }
+
+  const saveLabel = (userRole === 'admin' || LOCAL_MODE) ? 'Save changes' : 'Submit for review';
+  el.appendChild(mkBtn(saveLabel, 'btn btn-accent', saveTree));
+  if (ctx === 'edit' && !LOCAL_MODE && currentUser) {
+    el.appendChild(mkBtn('Delete tree', 'btn btn-danger', () => {
+      if (editingId != null) {
+        pendingDeletes.add(editingId);
+        updateDeleteHighlight();
+        closePanel();
+        setMode('delete');
+        updateBanner();
+      }
+    }));
+  }
+  el.appendChild(mkBtn('Cancel', 'btn', closePanel));
+}
+
+function closePanel() {
+  editingId = editingLng = editingLat = null;
+  document.getElementById('panel').classList.remove('open');
+  map.getLayer('tree-selected') && map.setFilter('tree-selected', ['==', ['get', 'id'], -1]);
+}
+
+// ============================================================================
+// STATS + TOAST
+// ============================================================================
+function updateStats() {
+  const n = treeData.features.length;
+  const measured = treeData.features.filter(f => f.properties.height_m);
+  const avg = measured.length
+    ? (measured.reduce((s, f) => s + f.properties.height_m, 0) / measured.length).toFixed(1)
+    : '–';
+  document.getElementById('stats').innerHTML =
+    `<b>${n.toLocaleString()}</b> trees · avg height <b>${avg} m</b>`;
+}
+
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 3000);
+}
+
+// ============================================================================
+// KEYBOARD
+// ============================================================================
+document.addEventListener('keydown', (e) => {
+  if (e.key === 'Escape') {
+    if (mode === 'delete') {
+      pendingDeletes.clear();
+      updateDeleteHighlight();
+      setMode('select');
+      if (pendingDeletes.size > 0) toast('Deletions cancelled');
+    } else if (mode !== 'select') {
+      setMode('select');
+    } else {
+      closePanel();
+    }
+  }
+});
+
+document.getElementById('btn-close').addEventListener('click', closePanel);
+</script>
+</body>
+</html>

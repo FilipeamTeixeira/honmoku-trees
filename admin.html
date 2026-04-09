@@ -1,0 +1,664 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin Review — Honmoku Tree Map</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
+
+  <style>
+    :root {
+      --paper:        #F7F6F3;
+      --white:        #FFFFFF;
+      --ink:          #1A1A1A;
+      --ink-2:        #555555;
+      --ink-3:        #999999;
+      --accent:       #1F7A4D;
+      --amber:        #d97706;
+      --red:          #dc2626;
+      --green:        #16a34a;
+      --border:       rgba(26,26,26,0.10);
+      --border-2:     rgba(26,26,26,0.06);
+      --r:            14px;
+      --r-sm:         8px;
+      --shadow:       0 4px 28px rgba(0,0,0,0.07);
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'DM Sans', -apple-system, sans-serif;
+      background: var(--paper);
+      color: var(--ink);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    /* ── Nav ───────────────────────────────────────────── */
+    nav {
+      position: sticky; top: 0;
+      z-index: 10;
+      height: 60px;
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 0 32px;
+      background: rgba(247,246,243,0.94);
+      backdrop-filter: blur(14px);
+      border-bottom: 0.5px solid var(--border);
+    }
+    .nav-brand {
+      display: flex; align-items: center; gap: 10px;
+      text-decoration: none;
+    }
+    .nav-brand-icon {
+      width: 30px; height: 30px;
+      background: var(--accent);
+      border-radius: 9px;
+      display: flex; align-items: center; justify-content: center;
+      color: #fff; font-size: 15px; flex-shrink: 0;
+    }
+    .nav-wordmark {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px; color: var(--ink); letter-spacing: -0.01em;
+    }
+    .nav-wordmark em { color: var(--accent); font-style: normal; }
+
+    .nav-right { display: flex; align-items: center; gap: 12px; }
+    .nav-right a {
+      font-size: 13px; color: var(--ink-2);
+      text-decoration: none; transition: color 0.15s;
+    }
+    .nav-right a:hover { color: var(--ink); }
+
+    .user-chip {
+      display: flex; align-items: center; gap: 7px;
+      padding: 4px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: 100px;
+      background: var(--white);
+      font-size: 13px; color: var(--ink-2);
+    }
+    .user-dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); flex-shrink: 0; }
+    .btn-logout {
+      border: none; background: none; cursor: pointer;
+      color: var(--ink-3); font-size: 12px; padding: 0 0 0 2px;
+      transition: color 0.15s;
+    }
+    .btn-logout:hover { color: var(--ink); }
+
+    /* ── Layout ────────────────────────────────────────── */
+    .page {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 56px 32px;
+    }
+    @media (max-width: 640px) { .page { padding: 40px 20px; } }
+
+    .page-header { margin-bottom: 48px; }
+    .page-kicker {
+      font-size: 11px; font-weight: 500;
+      letter-spacing: 0.12em; text-transform: uppercase;
+      color: var(--ink-3); margin-bottom: 8px;
+    }
+    .page-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: clamp(28px, 4vw, 40px);
+      color: var(--ink); line-height: 1.1; letter-spacing: -0.02em;
+    }
+    .page-sub {
+      font-size: 15px; color: var(--ink-2);
+      margin-top: 10px; line-height: 1.6;
+    }
+
+    /* ── Tabs ──────────────────────────────────────────── */
+    .tabs {
+      display: flex; gap: 0;
+      border: 0.5px solid var(--border);
+      border-radius: var(--r-sm);
+      background: var(--white);
+      overflow: hidden;
+      margin-bottom: 32px;
+      width: fit-content;
+    }
+    .tab {
+      padding: 8px 22px;
+      font-size: 13px; font-weight: 400;
+      color: var(--ink-3);
+      cursor: pointer;
+      border: none; background: none;
+      font-family: 'DM Sans', sans-serif;
+      transition: all 0.15s;
+      border-right: 0.5px solid var(--border);
+    }
+    .tab:last-child { border-right: none; }
+    .tab:hover { background: var(--paper); color: var(--ink); }
+    .tab.active { background: var(--ink); color: #fff; }
+
+    /* ── Cards ─────────────────────────────────────────── */
+    .cards { display: flex; flex-direction: column; gap: 16px; }
+
+    .card {
+      background: var(--white);
+      border: 0.5px solid var(--border);
+      border-radius: var(--r);
+      padding: 24px;
+      box-shadow: var(--shadow);
+    }
+    .card-header {
+      display: flex; align-items: flex-start;
+      justify-content: space-between; gap: 16px;
+      margin-bottom: 16px;
+    }
+    .card-meta { flex: 1; min-width: 0; }
+    .card-badge {
+      display: inline-flex; align-items: center;
+      font-size: 10px; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; padding: 3px 10px;
+      border-radius: 100px; margin-bottom: 8px;
+    }
+    .badge-add    { background: rgba(31,122,77,0.08);  color: var(--accent); }
+    .badge-edit   { background: rgba(37,99,235,0.08);  color: #1d4ed8; }
+    .badge-delete { background: rgba(220,38,38,0.08);  color: var(--red); }
+    .badge-pending   { background: rgba(217,119,6,0.08);  color: var(--amber); }
+    .badge-approved  { background: rgba(22,163,74,0.08);  color: var(--green); }
+    .badge-rejected  { background: rgba(220,38,38,0.08);  color: var(--red); }
+
+    .card-title {
+      font-size: 15px; font-weight: 500; color: var(--ink);
+      margin-bottom: 2px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+    .card-sub {
+      font-size: 13px; color: var(--ink-3); line-height: 1.5;
+    }
+
+    .card-content {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+      gap: 10px;
+      margin-bottom: 16px;
+    }
+    .field-item {
+      background: var(--paper);
+      border: 0.5px solid var(--border-2);
+      border-radius: var(--r-sm);
+      padding: 10px 12px;
+    }
+    .field-label {
+      font-size: 10px; font-weight: 500; letter-spacing: 0.08em;
+      text-transform: uppercase; color: var(--ink-3); margin-bottom: 3px;
+    }
+    .field-value { font-size: 14px; color: var(--ink); line-height: 1.4; }
+    .field-value.empty { color: var(--ink-3); font-style: italic; }
+
+    .card-actions {
+      display: flex; gap: 8px; flex-wrap: wrap;
+    }
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 18px;
+      border-radius: 100px;
+      border: 0.5px solid var(--border);
+      background: var(--white);
+      color: var(--ink-2);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; cursor: pointer;
+      transition: all 0.15s; white-space: nowrap;
+    }
+    .btn:hover { background: var(--paper); color: var(--ink); }
+    .btn-approve { background: var(--green); color: #fff; border-color: var(--green); }
+    .btn-approve:hover { opacity: 0.85; }
+    .btn-reject  { background: var(--red);   color: #fff; border-color: var(--red); }
+    .btn-reject:hover  { opacity: 0.85; }
+    .btn-primary { background: var(--ink);   color: #fff; border-color: var(--ink); }
+    .btn-primary:hover { opacity: 0.8; }
+
+    /* ── Note textarea ─────────────────────────────────── */
+    .review-note {
+      width: 100%; padding: 8px 10px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--r-sm);
+      background: var(--white);
+      font-family: 'DM Sans', sans-serif;
+      font-size: 13px; color: var(--ink);
+      resize: vertical; min-height: 50px;
+      margin-bottom: 8px;
+      transition: border-color 0.15s;
+    }
+    .review-note:focus { outline: none; border-color: var(--accent); }
+
+    /* ── Empty / Loading states ────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 80px 20px;
+    }
+    .empty-icon { font-size: 36px; margin-bottom: 16px; }
+    .empty-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 20px; color: var(--ink); margin-bottom: 8px;
+    }
+    .empty-sub { font-size: 14px; color: var(--ink-3); }
+
+    .spinner {
+      width: 28px; height: 28px;
+      border: 2px solid var(--border);
+      border-top-color: var(--accent);
+      border-radius: 50%;
+      animation: spin 0.7s linear infinite;
+      margin: 60px auto;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Login wall ────────────────────────────────────── */
+    #login-wall {
+      max-width: 380px; margin: 100px auto; padding: 0 20px;
+    }
+    .modal-kicker {
+      font-size: 11px; font-weight: 500; letter-spacing: 0.1em;
+      text-transform: uppercase; color: var(--ink-3); margin-bottom: 8px;
+    }
+    .modal-title {
+      font-family: 'DM Serif Display', serif;
+      font-size: 26px; color: var(--ink); margin-bottom: 6px;
+    }
+    .modal-sub { font-size: 14px; color: var(--ink-3); margin-bottom: 28px; line-height: 1.5; }
+    .field { margin-bottom: 14px; }
+    .field label {
+      display: block; font-size: 11px; font-weight: 500;
+      letter-spacing: 0.08em; text-transform: uppercase;
+      color: var(--ink-3); margin-bottom: 5px;
+    }
+    .field input {
+      width: 100%; padding: 9px 12px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--r-sm);
+      background: var(--white); color: var(--ink);
+      font-size: 14px; font-family: 'DM Sans', sans-serif;
+    }
+    .field input:focus { outline: none; border-color: var(--accent); }
+    .login-error {
+      font-size: 13px; color: var(--red);
+      padding: 9px 12px;
+      background: rgba(220,38,38,0.05);
+      border: 0.5px solid rgba(220,38,38,0.2);
+      border-radius: var(--r-sm);
+      margin-bottom: 12px; display: none;
+    }
+    .login-error.show { display: block; }
+    .login-actions { display: flex; flex-direction: column; gap: 8px; margin-top: 18px; }
+    .login-actions .btn { justify-content: center; padding: 11px; border-radius: var(--r-sm); }
+
+    /* ── Toast ─────────────────────────────────────────── */
+    .toast {
+      position: fixed; bottom: 28px; left: 50%;
+      transform: translateX(-50%) translateY(14px);
+      background: var(--ink); color: #fff;
+      border-radius: 100px; padding: 10px 22px;
+      font-size: 13px; z-index: 99;
+      opacity: 0; transition: all 0.25s ease; pointer-events: none;
+    }
+    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+    /* ── Divider ───────────────────────────────────────── */
+    .divider { height: 0.5px; background: var(--border); margin: 40px 0; }
+  </style>
+</head>
+<body>
+
+<!-- ── Nav ──────────────────────────────────────────────────────────── -->
+<nav>
+  <a href="map.html" class="nav-brand">
+    <div class="nav-brand-icon">🌳</div>
+    <span class="nav-wordmark">Honmoku <em>Trees</em></span>
+  </a>
+  <div class="nav-right" id="nav-right">
+    <a href="map.html">← Map</a>
+  </div>
+</nav>
+
+<!-- ── Login wall ───────────────────────────────────────────────────── -->
+<div id="login-wall" style="display:none">
+  <p class="modal-kicker">Admin access</p>
+  <h2 class="modal-title">Sign in</h2>
+  <p class="modal-sub">This page requires an admin account.</p>
+  <div class="login-error" id="login-error"></div>
+  <div class="field">
+    <label for="l-email">Email</label>
+    <input type="email" id="l-email" autocomplete="email" placeholder="you@example.com" />
+  </div>
+  <div class="field">
+    <label for="l-password">Password</label>
+    <input type="password" id="l-password" autocomplete="current-password" placeholder="••••••••" />
+  </div>
+  <div class="login-actions">
+    <button class="btn btn-primary" id="btn-login">Sign in</button>
+    <a href="map.html" class="btn" style="justify-content:center;text-align:center;">Back to map</a>
+  </div>
+</div>
+
+<!-- ── Main page ────────────────────────────────────────────────────── -->
+<div id="main-content" style="display:none">
+  <div class="page">
+    <div class="page-header">
+      <p class="page-kicker">Admin</p>
+      <h1 class="page-title">Review queue</h1>
+      <p class="page-sub">Approve or reject tree submissions from editors.</p>
+    </div>
+
+    <div class="tabs" role="tablist">
+      <button class="tab active" data-tab="pending"  role="tab">⏳ Pending <span id="count-pending"></span></button>
+      <button class="tab"        data-tab="approved" role="tab">✓ Approved</button>
+      <button class="tab"        data-tab="rejected" role="tab">✕ Rejected</button>
+    </div>
+
+    <div id="panel-pending"  class="cards" role="tabpanel"></div>
+    <div id="panel-approved" class="cards" role="tabpanel" style="display:none"></div>
+    <div id="panel-rejected" class="cards" role="tabpanel" style="display:none"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+// ============================================================================
+// Credentials loaded from config.js
+const { createClient } = window.supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================================================
+// AUTH GATE
+// ============================================================================
+let currentUser = null;
+let userRole    = null;
+let activeTab   = 'pending';
+
+sb.auth.onAuthStateChange(async (_event, session) => {
+  currentUser = session?.user ?? null;
+  userRole    = null;
+
+  if (currentUser) {
+    const { data } = await sb
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', currentUser.id)
+      .maybeSingle();
+    userRole = data?.role ?? null;
+  }
+
+  if (!currentUser || userRole !== 'admin') {
+    document.getElementById('main-content').style.display = 'none';
+    document.getElementById('login-wall').style.display   = 'block';
+    renderNavRight(false);
+  } else {
+    document.getElementById('login-wall').style.display   = 'none';
+    document.getElementById('main-content').style.display = 'block';
+    renderNavRight(true);
+    await loadAll();
+  }
+});
+
+// ── Login ─────────────────────────────────────────────────────────────
+document.getElementById('btn-login').addEventListener('click', async () => {
+  const email    = document.getElementById('l-email').value.trim();
+  const password = document.getElementById('l-password').value;
+  const errEl    = document.getElementById('login-error');
+  errEl.classList.remove('show');
+
+  if (!email || !password) {
+    errEl.textContent = 'Please enter your email and password.';
+    errEl.classList.add('show');
+    return;
+  }
+
+  const btn = document.getElementById('btn-login');
+  btn.textContent = 'Signing in…';
+  btn.disabled    = true;
+
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  btn.textContent = 'Sign in';
+  btn.disabled    = false;
+
+  if (error) {
+    errEl.textContent = error.message;
+    errEl.classList.add('show');
+  }
+});
+
+document.getElementById('l-password').addEventListener('keydown', e => {
+  if (e.key === 'Enter') document.getElementById('btn-login').click();
+});
+
+// ── Nav right ─────────────────────────────────────────────────────────
+function renderNavRight(loggedIn) {
+  const el = document.getElementById('nav-right');
+  el.innerHTML = '<a href="map.html">← Map</a>';
+  if (loggedIn && currentUser) {
+    const chip = document.createElement('div');
+    chip.className = 'user-chip';
+    chip.innerHTML = `<span class="user-dot"></span><span>${currentUser.email.split('@')[0]}</span>`;
+    const logoutBtn = document.createElement('button');
+    logoutBtn.className   = 'btn-logout';
+    logoutBtn.textContent = '✕';
+    logoutBtn.title       = 'Sign out';
+    logoutBtn.addEventListener('click', async () => {
+      await sb.auth.signOut();
+      toast('Signed out');
+    });
+    chip.appendChild(logoutBtn);
+    el.appendChild(chip);
+  }
+}
+
+// ============================================================================
+// TABS
+// ============================================================================
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    activeTab = tab.dataset.tab;
+
+    document.getElementById('panel-pending').style.display  = activeTab === 'pending'  ? '' : 'none';
+    document.getElementById('panel-approved').style.display = activeTab === 'approved' ? '' : 'none';
+    document.getElementById('panel-rejected').style.display = activeTab === 'rejected' ? '' : 'none';
+  });
+});
+
+// ============================================================================
+// LOAD
+// ============================================================================
+async function loadAll() {
+  await Promise.all([
+    loadTab('pending'),
+    loadTab('approved'),
+    loadTab('rejected')
+  ]);
+}
+
+async function loadTab(status) {
+  const panel = document.getElementById(`panel-${status}`);
+  panel.innerHTML = '<div class="spinner"></div>';
+
+  const { data, error } = await sb
+    .from('pending_changes')
+    .select('*')
+    .eq('status', status)
+    .order('submitted_at', { ascending: false });
+
+  if (error) {
+    panel.innerHTML = `<div class="empty-state"><div class="empty-icon">⚠️</div><div class="empty-title">Error loading data</div><div class="empty-sub">${error.message}</div></div>`;
+    return;
+  }
+
+  if (!data || data.length === 0) {
+    const labels = { pending: 'No pending submissions', approved: 'No approved items', rejected: 'No rejected items' };
+    panel.innerHTML = `<div class="empty-state"><div class="empty-icon">✓</div><div class="empty-title">${labels[status]}</div><div class="empty-sub">Nothing here yet.</div></div>`;
+    if (status === 'pending') {
+      document.getElementById('count-pending').textContent = '';
+    }
+    return;
+  }
+
+  if (status === 'pending') {
+    document.getElementById('count-pending').textContent = `(${data.length})`;
+  }
+
+  panel.innerHTML = '';
+  data.forEach(item => panel.appendChild(buildCard(item)));
+}
+
+// ============================================================================
+// CARD BUILDER
+// ============================================================================
+function buildCard(item) {
+  const card = document.createElement('div');
+  card.className = 'card';
+
+  const actionLabel = { add: '+ New tree', edit: '✎ Edit', delete: '✕ Delete' }[item.action] || item.action;
+  const badgeCls    = { add: 'badge-add', edit: 'badge-edit', delete: 'badge-delete' }[item.action] || 'badge-pending';
+  const statusCls   = { pending: 'badge-pending', approved: 'badge-approved', rejected: 'badge-rejected' }[item.status] || '';
+  const speciesLabel = [item.species_en, item.species_jp, item.species_lat].filter(Boolean).join(' · ') || null;
+  const submittedDate = new Date(item.submitted_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' });
+  const reviewDate    = item.reviewed_at
+    ? new Date(item.reviewed_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })
+    : null;
+
+  const fields = [
+    ['Species', speciesLabel],
+    ['Height', item.height_m != null ? `${item.height_m} m` : null],
+    ['Canopy', item.canopy_m2 != null ? `${item.canopy_m2} m²` : null],
+    ['Age', item.age_years != null ? `~${item.age_years} yrs` : null],
+    ['Lat / Lng', item.lat != null ? `${item.lat.toFixed(5)}, ${item.lng.toFixed(5)}` : null],
+    ['Notes', item.notes]
+  ];
+
+  const fieldsHtml = fields.map(([label, val]) => `
+    <div class="field-item">
+      <div class="field-label">${label}</div>
+      <div class="field-value${!val ? ' empty' : ''}">${val || 'not set'}</div>
+    </div>
+  `).join('');
+
+  let actionsHtml = '';
+  if (item.status === 'pending') {
+    actionsHtml = `
+      <textarea class="review-note" id="note-${item.id}" placeholder="Optional review note…" rows="2"></textarea>
+      <div class="card-actions">
+        <button class="btn btn-approve" onclick="review('${item.id}', 'approved')">✓ Approve</button>
+        <button class="btn btn-reject"  onclick="review('${item.id}', 'rejected')">✕ Reject</button>
+      </div>
+    `;
+  } else {
+    actionsHtml = `
+      <div class="card-actions">
+        <span class="card-badge ${statusCls}">${item.status}</span>
+        ${reviewDate ? `<span style="font-size:12px;color:var(--ink-3);margin-left:4px">Reviewed ${reviewDate}</span>` : ''}
+        ${item.review_note ? `<span style="font-size:12px;color:var(--ink-3);margin-left:8px">"${item.review_note}"</span>` : ''}
+      </div>
+    `;
+  }
+
+  card.innerHTML = `
+    <div class="card-header">
+      <div class="card-meta">
+        <span class="card-badge ${badgeCls}">${actionLabel}</span>
+        <div class="card-title">${speciesLabel || (item.tree_id ? `Tree #${item.tree_id}` : 'Unknown species')}</div>
+        <div class="card-sub">Submitted by ${item.submitted_by_email || 'unknown'} · ${submittedDate}</div>
+      </div>
+    </div>
+    <div class="card-content">${fieldsHtml}</div>
+    ${actionsHtml}
+  `;
+
+  return card;
+}
+
+// ============================================================================
+// REVIEW ACTION
+// ============================================================================
+async function review(pendingId, decision) {
+  const note = (document.getElementById(`note-${pendingId}`)?.value || '').trim();
+
+  // Fetch the pending change
+  const { data: change, error: fetchErr } = await sb
+    .from('pending_changes')
+    .select('*')
+    .eq('id', pendingId)
+    .single();
+
+  if (fetchErr || !change) { toast('❌ Could not load change'); return; }
+
+  // If approved, apply to trees table
+  if (decision === 'approved') {
+    let dbErr = null;
+
+    if (change.action === 'add') {
+      const { error } = await sb.from('trees').insert({
+        lat:         change.lat,
+        lng:         change.lng,
+        species_en:  change.species_en,
+        species_jp:  change.species_jp,
+        species_lat: change.species_lat,
+        height_m:    change.height_m,
+        canopy_m2:   change.canopy_m2,
+        age_years:   change.age_years,
+        notes:       change.notes,
+        photo_url:   change.photo_url
+      });
+      dbErr = error;
+    } else if (change.action === 'edit' && change.tree_id) {
+      const { error } = await sb.from('trees').update({
+        lat:         change.lat,
+        lng:         change.lng,
+        species_en:  change.species_en,
+        species_jp:  change.species_jp,
+        species_lat: change.species_lat,
+        height_m:    change.height_m,
+        canopy_m2:   change.canopy_m2,
+        age_years:   change.age_years,
+        notes:       change.notes,
+        photo_url:   change.photo_url
+      }).eq('id', change.tree_id);
+      dbErr = error;
+    } else if (change.action === 'delete' && change.tree_id) {
+      const { error } = await sb.from('trees').delete().eq('id', change.tree_id);
+      dbErr = error;
+    }
+
+    if (dbErr) { toast('❌ Could not apply change: ' + dbErr.message); return; }
+  }
+
+  // Update pending_changes status
+  const { error: updateErr } = await sb
+    .from('pending_changes')
+    .update({
+      status:       decision,
+      reviewed_at:  new Date().toISOString(),
+      reviewed_by:  currentUser.id,
+      review_note:  note || null
+    })
+    .eq('id', pendingId);
+
+  if (updateErr) { toast('❌ Status update failed'); return; }
+
+  toast(decision === 'approved' ? '✓ Approved and applied' : '✕ Rejected');
+  await loadAll();
+}
+
+// ============================================================================
+// TOAST
+// ============================================================================
+let toastTimer;
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(() => el.classList.remove('show'), 2800);
+}
+</script>
+</body>
+</html>
