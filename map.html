@@ -484,8 +484,10 @@ async function loadTrees() {
         }));
         loadedFromSupabase = true;
       } catch (sbErr) {
-        console.warn('Supabase unavailable, falling back to trees.geojson:', sbErr.message);
-        toast('Using local data (Supabase unreachable)');
+        const reason = window.HONMOKU_CONFIG.formatSupabaseError(sbErr);
+        const hint = window.HONMOKU_CONFIG.getSupabaseTroubleshootingHint(sbErr);
+        console.warn('Supabase unavailable, falling back to trees.geojson.', { reason, hint, raw: sbErr });
+        toast(`Using local data (Supabase unreachable: ${reason})`);
       }
     }
 
