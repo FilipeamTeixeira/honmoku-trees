@@ -59,7 +59,7 @@ function getSupabaseTroubleshootingHint(err) {
   const text = formatSupabaseError(err).toLowerCase();
 
   if (text.includes('failed to fetch') || text.includes('network') || text.includes('timeout')) {
-    return 'Check your internet connection, firewall/proxy, and that your Supabase project URL is reachable.';
+    return 'Check your internet connection/firewall/proxy, and if only large queries time out, try loading data in pages or increasing timeout.';
   }
   if (text.includes('invalid api key') || text.includes('jwt') || text.includes('apikey')) {
     return 'Your API key appears invalid. Copy the current publishable (or anon) key from Supabase Dashboard → Settings → API.';

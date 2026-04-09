@@ -470,14 +470,32 @@ async function loadTrees() {
 
     if (!LOCAL_MODE && sb) {
       try {
-        // Timeout after 8s in case Supabase hangs
-        const timeout = new Promise((_, reject) =>
-          setTimeout(() => reject(new Error('Supabase timeout')), 8000)
-        );
-        const query = sb.from('trees').select('*');
-        const { data, error } = await Promise.race([query, timeout]);
-        if (error) throw error;
-        treeData.features = (data || []).map(t => ({
+        const PAGE_SIZE = 1000;
+        const MAX_PAGES = 20;
+        const PAGE_TIMEOUT_MS = 12000;
+        const allRows = [];
+
+        for (let page = 0; page < MAX_PAGES; page++) {
+          const from = page * PAGE_SIZE;
+          const to = from + PAGE_SIZE - 1;
+          const timeout = new Promise((_, reject) =>
+            setTimeout(() => reject(new Error(`Supabase timeout (page ${page + 1})`)), PAGE_TIMEOUT_MS)
+          );
+          const query = sb
+            .from('trees')
+            .select('*')
+            .order('id', { ascending: true })
+            .range(from, to);
+
+          const { data, error } = await Promise.race([query, timeout]);
+          if (error) throw error;
+
+          const rows = data || [];
+          allRows.push(...rows);
+          if (rows.length < PAGE_SIZE) break;
+        }
+
+        treeData.features = allRows.map(t => ({
           type: 'Feature',
           geometry: { type: 'Point', coordinates: [t.lng, t.lat] },
           properties: t
