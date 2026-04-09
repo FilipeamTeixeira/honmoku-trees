@@ -294,10 +294,9 @@
 // ============================================================================
 // CONFIG
 // ============================================================================
-const LOCAL_MODE = SUPABASE_URL.includes('YOUR_PROJECT_ID');
-
-const { createClient } = window.supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseStatus = window.HONMOKU_CONFIG.getSupabaseStatus();
+const LOCAL_MODE = !supabaseStatus.enabled;
+const sb = window.HONMOKU_CONFIG.createHonmokuSupabaseClient();
 
 // ============================================================================
 // STATE
@@ -338,26 +337,31 @@ map.addControl(new maplibregl.ScaleControl(), 'bottom-right');
 // ============================================================================
 // AUTH
 // ============================================================================
-sb.auth.onAuthStateChange(async (_event, session) => {
-  currentUser = session?.user ?? null;
-  userRole    = null;
+if (sb) {
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    currentUser = session?.user ?? null;
+    userRole    = null;
 
-  if (currentUser && !LOCAL_MODE) {
-    const { data } = await sb
-      .from('user_roles').select('role')
-      .eq('user_id', currentUser.id).maybeSingle();
-    userRole = data?.role ?? 'editor';
-  }
+    if (currentUser && !LOCAL_MODE) {
+      const { data } = await sb
+        .from('user_roles').select('role')
+        .eq('user_id', currentUser.id).maybeSingle();
+      userRole = data?.role ?? 'editor';
+    }
 
-  renderNav();
-  if (mapReady) await loadTrees();
-});
+    renderNav();
+    if (mapReady) await loadTrees();
+  });
+}
 
 // ============================================================================
 // MAP LOAD
 // ============================================================================
 map.on('load', async () => {
   mapReady = true;
+  if (LOCAL_MODE && supabaseStatus.message) {
+    toast(supabaseStatus.message);
+  }
 
   // Sources
   map.addSource('trees',   { type: 'geojson', data: treeData });
@@ -464,7 +468,7 @@ async function loadTrees() {
   try {
     let loadedFromSupabase = false;
 
-    if (!LOCAL_MODE) {
+    if (!LOCAL_MODE && sb) {
       try {
         // Timeout after 8s in case Supabase hangs
         const timeout = new Promise((_, reject) =>

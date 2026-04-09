@@ -365,8 +365,8 @@
 <script>
 // ============================================================================
 // Credentials loaded from config.js
-const { createClient } = window.supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseStatus = window.HONMOKU_CONFIG.getSupabaseStatus();
+const sb = window.HONMOKU_CONFIG.createHonmokuSupabaseClient();
 
 // ============================================================================
 // AUTH GATE
@@ -375,30 +375,41 @@ let currentUser = null;
 let userRole    = null;
 let activeTab   = 'pending';
 
-sb.auth.onAuthStateChange(async (_event, session) => {
-  currentUser = session?.user ?? null;
-  userRole    = null;
+if (!sb) {
+  const wall = document.getElementById('login-wall');
+  wall.style.display = 'block';
+  wall.innerHTML = `
+    <div class="card">
+      <p class="modal-kicker">Admin access</p>
+      <h1 class="modal-title">Supabase unavailable</h1>
+      <p class="modal-sub">${supabaseStatus.message}</p>
+    </div>`;
+} else {
+  sb.auth.onAuthStateChange(async (_event, session) => {
+    currentUser = session?.user ?? null;
+    userRole    = null;
 
-  if (currentUser) {
-    const { data } = await sb
-      .from('user_roles')
-      .select('role')
-      .eq('user_id', currentUser.id)
-      .maybeSingle();
-    userRole = data?.role ?? null;
-  }
+    if (currentUser) {
+      const { data } = await sb
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', currentUser.id)
+        .maybeSingle();
+      userRole = data?.role ?? null;
+    }
 
-  if (!currentUser || userRole !== 'admin') {
-    document.getElementById('main-content').style.display = 'none';
-    document.getElementById('login-wall').style.display   = 'block';
-    renderNavRight(false);
-  } else {
-    document.getElementById('login-wall').style.display   = 'none';
-    document.getElementById('main-content').style.display = 'block';
-    renderNavRight(true);
-    await loadAll();
-  }
-});
+    if (!currentUser || userRole !== 'admin') {
+      document.getElementById('main-content').style.display = 'none';
+      document.getElementById('login-wall').style.display   = 'block';
+      renderNavRight(false);
+    } else {
+      document.getElementById('login-wall').style.display   = 'none';
+      document.getElementById('main-content').style.display = 'block';
+      renderNavRight(true);
+      await loadAll();
+    }
+  });
+}
 
 // ── Login ─────────────────────────────────────────────────────────────
 document.getElementById('btn-login').addEventListener('click', async () => {
@@ -414,6 +425,12 @@ document.getElementById('btn-login').addEventListener('click', async () => {
   }
 
   const btn = document.getElementById('btn-login');
+  if (!sb) {
+    errEl.textContent = supabaseStatus.message;
+    errEl.classList.add('show');
+    return;
+  }
+
   btn.textContent = 'Signing in…';
   btn.disabled    = true;
 

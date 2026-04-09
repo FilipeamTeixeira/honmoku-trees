@@ -182,13 +182,19 @@
 </main>
 
 <script>
-const { createClient } = window.supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseStatus = window.HONMOKU_CONFIG.getSupabaseStatus();
+const sb = window.HONMOKU_CONFIG.createHonmokuSupabaseClient();
 
 // If already signed in, redirect immediately
-sb.auth.getSession().then(({ data: { session } }) => {
-  if (session) redirect();
-});
+if (sb) {
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) redirect();
+  });
+} else {
+  const errEl = document.getElementById('error-box');
+  errEl.textContent = supabaseStatus.message;
+  errEl.classList.add('show');
+}
 
 function redirect() {
   const p = new URLSearchParams(window.location.search);
@@ -213,6 +219,12 @@ async function doLogin() {
   }
 
   const btn = document.getElementById('btn-submit');
+  if (!sb) {
+    errEl.textContent = supabaseStatus.message;
+    errEl.classList.add('show');
+    return;
+  }
+
   btn.textContent = 'Signing in…';
   btn.disabled    = true;
 

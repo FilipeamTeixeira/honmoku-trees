@@ -449,25 +449,27 @@
 </footer>
 
 <script>
-const { createClient } = window.supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseStatus = window.HONMOKU_CONFIG.getSupabaseStatus();
+const sb = window.HONMOKU_CONFIG.createHonmokuSupabaseClient();
 
 // Update CTA if already signed in
-sb.auth.getSession().then(({ data: { session } }) => {
-  if (session) {
-    ['nav-login-btn', 'mobile-login-btn'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.textContent = 'Open map'; el.href = 'map.html'; }
-    });
-  }
-});
+if (sb) {
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      ['nav-login-btn', 'mobile-login-btn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = 'Open map'; el.href = 'map.html'; }
+      });
+    }
+  });
+}
 
 // Tree count
 async function loadStat() {
   const el = document.getElementById('hero-stat');
   try {
     let n = null;
-    if (!SUPABASE_URL.includes('YOUR_PROJECT_ID')) {
+    if (sb && supabaseStatus.enabled) {
       const { count } = await sb.from('trees').select('*', { count: 'exact', head: true });
       n = count;
     }
@@ -957,25 +959,27 @@ if (prefersReduced || !('IntersectionObserver' in window)) {
 </footer>
 
 <script>
-const { createClient } = window.supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+const supabaseStatus = window.HONMOKU_CONFIG.getSupabaseStatus();
+const sb = window.HONMOKU_CONFIG.createHonmokuSupabaseClient();
 
 // Update CTA if already signed in
-sb.auth.getSession().then(({ data: { session } }) => {
-  if (session) {
-    ['nav-login-btn', 'mobile-login-btn'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) { el.textContent = 'Open map'; el.href = 'map.html'; }
-    });
-  }
-});
+if (sb) {
+  sb.auth.getSession().then(({ data: { session } }) => {
+    if (session) {
+      ['nav-login-btn', 'mobile-login-btn'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) { el.textContent = 'Open map'; el.href = 'map.html'; }
+      });
+    }
+  });
+}
 
 // Tree count
 async function loadStat() {
   const el = document.getElementById('hero-stat');
   try {
     let n = null;
-    if (!SUPABASE_URL.includes('YOUR_PROJECT_ID')) {
+    if (sb && supabaseStatus.enabled) {
       const { count } = await sb.from('trees').select('*', { count: 'exact', head: true });
       n = count;
     }
