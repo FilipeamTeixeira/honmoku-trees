@@ -89,12 +89,19 @@ ALTER TABLE pending_changes ENABLE ROW LEVEL SECURITY;
 ALTER TABLE user_roles      ENABLE ROW LEVEL SECURITY;
 
 -- Trees: public read, admin-only write
+DROP POLICY IF EXISTS "trees_select_all"   ON trees;
+DROP POLICY IF EXISTS "trees_insert_admin" ON trees;
+DROP POLICY IF EXISTS "trees_update_admin" ON trees;
+DROP POLICY IF EXISTS "trees_delete_admin" ON trees;
 CREATE POLICY "trees_select_all"   ON trees FOR SELECT USING (true);
 CREATE POLICY "trees_insert_admin" ON trees FOR INSERT WITH CHECK (is_admin());
 CREATE POLICY "trees_update_admin" ON trees FOR UPDATE USING (is_admin());
 CREATE POLICY "trees_delete_admin" ON trees FOR DELETE USING (is_admin());
 
 -- Pending changes: submitter or admin can read; authenticated users can insert
+DROP POLICY IF EXISTS "pending_select" ON pending_changes;
+DROP POLICY IF EXISTS "pending_insert" ON pending_changes;
+DROP POLICY IF EXISTS "pending_update" ON pending_changes;
 CREATE POLICY "pending_select" ON pending_changes FOR SELECT USING (
   submitted_by = auth.uid() OR is_admin()
 );
@@ -104,6 +111,7 @@ CREATE POLICY "pending_insert" ON pending_changes FOR INSERT WITH CHECK (
 CREATE POLICY "pending_update" ON pending_changes FOR UPDATE USING (is_admin());
 
 -- User roles: each user can read only their own row
+DROP POLICY IF EXISTS "roles_select_own" ON user_roles;
 CREATE POLICY "roles_select_own" ON user_roles FOR SELECT USING (
   user_id = auth.uid()
 );
