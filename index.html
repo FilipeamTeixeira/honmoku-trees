@@ -1,231 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Honmoku Tree Map — Editor</title>
-
-  <link href="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.css" rel="stylesheet" />
-  <script src="https://unpkg.com/maplibre-gl@4.7.1/dist/maplibre-gl.js"></script>
-
+  <!-- MapLibre CSS -->
+  <link rel="stylesheet" href="https://esm.sh/maplibre-gl@4/dist/maplibre-gl.css" />
   <style>
-    * { margin: 0; padding: 0; box-sizing: border-box; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-      background: #0a0a0a;
-      color: #e0e0e0;
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f8f9fa; }
+    
+    #toolbar { 
+      padding: 10px; background: #fff; display: flex; gap: 10px; flex-wrap: wrap; 
+      align-items: center; border-bottom: 1px solid #ddd; height: 46px; position: sticky; top: 0; z-index: 10;
     }
-
-    /* ── Header ──────────────────────────────────��──── */
-    header {
-      position: fixed;
-      top: 0; left: 0; right: 0;
-      z-index: 20;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 10px 20px;
-      background: rgba(10, 10, 10, 0.9);
-      backdrop-filter: blur(12px);
-      border-bottom: 1px solid rgba(255,255,255,0.06);
-      gap: 12px;
-      flex-wrap: wrap;
+    #toolbar button { padding: 6px 12px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #f1f1f1; }
+    #toolbar button:hover { background: #e2e2e2; }
+    
+    /* ✅ CRITICAL: Explicit dimensions prevent black screen */
+    #map { height: calc(100vh - 46px); width: 100%; position: relative; }
+    
+    /* Modal */
+    #edit-form { 
+      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
+      background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); 
+      z-index: 1000; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; 
     }
-    header h1 { font-size: 16px; font-weight: 600; white-space: nowrap; }
-    header h1 span { color: #4ade80; }
-    .stats { font-size: 13px; color: #888; white-space: nowrap; }
-    .stats b { color: #4ade80; }
-
-    .toolbar { display: flex; gap: 8px; align-items: center; }
-    .toolbar button {
-      padding: 6px 14px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: #e0e0e0;
-      font-size: 13px;
-      cursor: pointer;
-      transition: all 0.15s;
+    #edit-form h3 { margin-bottom: 12px; }
+    #edit-form label { display: block; margin-top: 12px; font-weight: 500; font-size: 14px; }
+    #edit-form input, #edit-form textarea, #edit-form select { 
+      width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; 
     }
-    .toolbar button:hover { background: rgba(255,255,255,0.1); }
-    .toolbar button.active { background: #16a34a; border-color: #16a34a; color: #fff; }
-    .toolbar button.export-btn { background: #2563eb; border-color: #2563eb; }
-    .toolbar button.export-btn:hover { background: #1d4ed8; }
-
-    /* ���─ Map ────────────────────────────────────────── */
-    #map { position: fixed; top: 0; bottom: 0; left: 0; right: 0; }
-
-    /* ── Side Panel ─────────────────────────────────── */
-    .panel {
-      position: fixed;
-      top: 56px; right: 0; bottom: 0;
-      width: 320px;
-      background: rgba(15, 15, 15, 0.95);
-      backdrop-filter: blur(12px);
-      border-left: 1px solid rgba(255,255,255,0.06);
-      z-index: 15;
-      transform: translateX(100%);
-      transition: transform 0.25s ease;
-      overflow-y: auto;
-      padding: 20px;
-    }
-    .panel.open { transform: translateX(0); }
-    .panel h2 { font-size: 15px; font-weight: 600; margin-bottom: 16px; color: #4ade80; }
-    .panel label {
-      display: block;
-      font-size: 12px;
-      color: #888;
-      margin-bottom: 4px;
-      margin-top: 12px;
-    }
-    .panel input, .panel textarea, .panel select {
-      width: 100%;
-      padding: 8px 10px;
-      border-radius: 8px;
-      border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(255,255,255,0.05);
-      color: #e0e0e0;
-      font-size: 13px;
-      font-family: inherit;
-    }
-    .panel input:focus, .panel textarea:focus {
-      outline: none;
-      border-color: #4ade80;
-    }
-    .panel textarea { resize: vertical; min-height: 60px; }
-    .panel-buttons {
-      display: flex;
-      gap: 8px;
-      margin-top: 20px;
-    }
-    .panel-buttons button {
-      flex: 1;
-      padding: 8px 0;
-      border-radius: 8px;
-      border: none;
-      font-size: 13px;
-      font-weight: 500;
-      cursor: pointer;
-    }
-    .btn-save { background: #16a34a; color: #fff; }
-    .btn-save:hover { background: #15803d; }
-    .btn-delete { background: #dc2626; color: #fff; }
-    .btn-delete:hover { background: #b91c1c; }
-    .btn-cancel { background: rgba(255,255,255,0.1); color: #ccc; }
-    .btn-cancel:hover { background: rgba(255,255,255,0.15); }
-
-    /* ── Legend ──────────────────────────────────────── */
-    .legend {
-      position: fixed;
-      bottom: 32px; left: 24px;
-      z-index: 10;
-      background: rgba(20, 20, 20, 0.9);
-      backdrop-filter: blur(12px);
-      border: 1px solid rgba(255,255,255,0.06);
-      border-radius: 12px;
-      padding: 14px 18px;
-      font-size: 12px;
-    }
-    .legend-title { font-weight: 600; margin-bottom: 8px; font-size: 13px; }
-    .legend-item { display: flex; align-items: center; gap: 8px; padding: 2px 0; }
-    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
-
-    /* ── Toast ───────────────────────────────────────── */
-    .toast {
-      position: fixed;
-      bottom: 32px;
-      left: 50%;
-      transform: translateX(-50%) translateY(80px);
-      background: rgba(20,20,20,0.95);
-      border: 1px solid rgba(255,255,255,0.1);
-      border-radius: 10px;
-      padding: 10px 20px;
-      font-size: 13px;
-      z-index: 30;
-      opacity: 0;
-      transition: all 0.3s ease;
-      pointer-events: none;
-    }
-    .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
-
-    /* ── Crosshair when adding ──────────────────────── */
-    .crosshair .maplibregl-canvas { cursor: crosshair !important; }
+    #edit-form .btn-group { margin-top: 16px; display: flex; gap: 10px; }
+    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
+    .height-options { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
+    .height-options label { display: flex; align-items: center; gap: 4px; font-weight: normal; margin-top: 12px; cursor: pointer; }
+    .height-options input { margin: 0; width: auto; }
+    
+    /* MapLibre cursor fixes */
+    .maplibregl-canvas-container { cursor: grab; }
+    .maplibregl-canvas-container:active { cursor: grabbing; }
   </style>
 </head>
-
 <body>
 
-<header>
-  <h1>🌳 Honmoku <span>Tree Map</span></h1>
-  <div class="stats" id="stats"></div>
-  <div class="toolbar">
-    <button id="btn-add" title="Click map to add a tree">+ Add tree</button>
-    <button id="btn-undo" title="Undo last action">↩ Undo</button>
-    <button class="export-btn" id="btn-export" title="Download edited GeoJSON">⬇ Export GeoJSON</button>
-    <button class="export-btn" id="btn-csv" title="Download as CSV">⬇ Export CSV</button>
+  <div id="toolbar">
+    <strong>🌳 Honmoku Tree Map</strong>
+    <button id="btn-add">+ Add tree</button>
+    <button id="btn-undo">↩ Undo</button>
+    <button id="btn-export-geojson">⬇ Export GeoJSON</button>
+    <button id="btn-export-csv">⬇ Export CSV</button>
   </div>
-</header>
 
-<div id="map"></div>
+  <div id="map"></div>
 
-<!-- Edit / New tree panel -->
-<div class="panel" id="panel">
-  <h2 id="panel-title">Edit tree</h2>
+  <div class="overlay" id="overlay"></div>
+  <div id="edit-form">
+    <h3>Edit tree</h3>
+    <label>Species (English)<input type="text" id="species-en"></label>
+    <label>Species (Japanese)<input type="text" id="species-jp"></label>
+    <label>Species (Latin)<input type="text" id="species-latin"></label>
+    
+    <label>Tree height (m)</label>
+    <div class="height-options">
+      <label><input type="radio" name="height" value="<5"> < 5 m</label>
+      <label><input type="radio" name="height" value="5-10"> 5 – 10 m</label>
+      <label><input type="radio" name="height" value="10-20"> 10 – 20 m</label>
+      <label><input type="radio" name="height" value=">20"> > 20 m</label>
+    </div>
 
-  <label>Species (English)</label>
-  <input type="text" id="f-species-en" placeholder="e.g. Japanese Black Pine" />
-
-  <label>Species (Japanese)</label>
-  <input type="text" id="f-species-jp" placeholder="e.g. クロマツ" />
-
-  <label>Species (Latin)</label>
-  <input type="text" id="f-species-lat" placeholder="e.g. Pinus thunbergii" />
-
-  <label>Height (m)</label>
-  <input type="number" id="f-height" step="0.1" />
-
-  <label>Canopy area (m²)</label>
-  <input type="number" id="f-canopy" step="0.1" />
-
-  <label>Estimated age (years)</label>
-  <input type="number" id="f-age" />
-
-  <label>Notes</label>
-  <textarea id="f-notes" placeholder="Any notes about this tree..."></textarea>
-
-  <label>Photo URL</label>
-  <input type="text" id="f-photo" placeholder="https://..." />
-
-  <div class="panel-buttons">
-    <button class="btn-save" id="btn-save">💾 Save</button>
-    <button class="btn-delete" id="btn-delete">🗑 Delete</button>
-    <button class="btn-cancel" id="btn-close">✕ Cancel</button>
+    <label>Canopy area (m²)<input type="number" step="0.1" id="canopy"></label>
+    <label>Estimated age (years)<input type="number" id="age"></label>
+    <label>Notes<textarea id="notes" rows="2"></textarea></label>
+    <label>Photo URL<input type="url" id="photo-url"></label>
+    
+    <div class="btn-group">
+      <button id="btn-save">💾 Save</button>
+      <button id="btn-delete">🗑 Delete</button>
+      <button id="btn-cancel">✕ Cancel</button>
+    </div>
   </div>
-</div>
 
-<div class="legend">
-  <div class="legend-title">Tree height</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#86efac"></div> &lt; 5 m</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#4ade80"></div> 5 – 10 m</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#16a34a"></div> 10 – 20 m</div>
-  <div class="legend-item"><div class="legend-dot" style="background:#166534"></div> &gt; 20 m</div>
-</div>
+  <!-- ✅ ES Module Script -->
+  <script type="module">
+    import maplibregl from 'https://esm.sh/maplibre-gl@4';
+    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
-<div class="toast" id="toast"></div>
+    const SUPABASE_URL = 'https://xgnoqhikgvpltpbcgfwu.supabase.co';
+    const SUPABASE_ANON_KEY = 'sb_publishable_YsWANJ0xdGaHlg3gtjvhww_CXUowKri';
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-<script>
-// ============================================================================
-// STATE
-// ============================================================================
-let treeData = null;      // the live GeoJSON FeatureCollection
-let editingId = null;     // which tree is selected
-let addMode = false;      // click-to-add mode
-let history = [];         // undo stack (snapshots of treeData)
-let nextId = 1;
-
-// ============================================================================
-// MAP SETUP
-// ============================================================================
+    // Initialize Map
 const map = new maplibregl.Map({
   container: "map",
   style: {
@@ -251,265 +116,217 @@ const map = new maplibregl.Map({
 map.addControl(new maplibregl.NavigationControl(), "top-right");
 map.addControl(new maplibregl.ScaleControl(), "bottom-right");
 
-// ============================================================================
-// LOAD DATA
-// ============================================================================
-map.on("load", async () => {
-  const res = await fetch("trees.geojson");
-  treeData = await res.json();
 
-  // Ensure every feature has an id
-  treeData.features.forEach((f, i) => {
-    if (!f.properties.id) f.properties.id = i + 1;
-    nextId = Math.max(nextId, f.properties.id + 1);
-  });
+    // UI State
+    const form = document.getElementById('edit-form');
+    const overlay = document.getElementById('overlay');
+    let currentTreeId = null;
+    let undoStack = [];
 
-  map.addSource("trees", { type: "geojson", data: treeData });
+    // 🔹 Setup layers & clustering after map loads
+    map.on('load', () => {
+      map.addSource('trees', {
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50
+      });
 
-  map.addLayer({
-    id: "tree-circles",
-    type: "circle",
-    source: "trees",
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 3, 16, 6, 19, 12],
-      "circle-color": [
-        "step", ["coalesce", ["get", "height_m"], 0],
-        "#86efac", 5, "#4ade80", 10, "#16a34a", 20, "#166534"
-      ],
-      "circle-opacity": 0.85,
-      "circle-stroke-width": 1.5,
-      "circle-stroke-color": "rgba(255,255,255,0.2)"
+      // Cluster circles
+      map.addLayer({
+        id: 'tree-clusters',
+        type: 'circle',
+        source: 'trees',
+        filter: ['has', 'point_count'],
+        paint: {
+          'circle-color': '#3b82f6',
+          'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40]
+        }
+      });
+
+      // Unclustered points
+      map.addLayer({
+        id: 'tree-points',
+        type: 'circle',
+        source: 'trees',
+        filter: ['!', ['has', 'point_count']],
+        paint: { 'circle-radius': 7, 'circle-color': '#22c55e' }
+      });
+
+      // Cursors
+      map.on('mouseenter', 'tree-clusters', () => map.getCanvas().style.cursor = 'pointer');
+      map.on('mouseleave', 'tree-clusters', () => map.getCanvas().style.cursor = 'grab');
+      map.on('mouseenter', 'tree-points', () => map.getCanvas().style.cursor = 'pointer');
+      map.on('mouseleave', 'tree-points', () => map.getCanvas().style.cursor = 'grab');
+
+      // Cluster click -> zoom in
+      map.on('click', 'tree-clusters', (e) => {
+        const features = map.queryRenderedFeatures(e.point, { layers: ['tree-clusters'] });
+        const clusterId = features[0].properties.cluster_id;
+        map.getSource('trees').getClusterExpansionZoom(clusterId, (err, zoom) => {
+          if (!err) map.easeTo({ center: features[0].geometry.coordinates, zoom });
+        });
+      });
+
+      // Point click -> open edit form
+      map.on('click', 'tree-points', (e) => {
+        const props = e.features[0].properties;
+        openEditForm(props.id);
+      });
+
+      loadTrees();
+    });
+
+    // 🔹 UI Handlers
+    document.getElementById('btn-add').addEventListener('click', () => {
+      currentTreeId = null;
+      clearForm();
+      openForm();
+    });
+
+    document.getElementById('btn-cancel').addEventListener('click', closeForm);
+    overlay.addEventListener('click', closeForm);
+
+    document.getElementById('btn-undo').addEventListener('click', () => {
+      if (undoStack.length === 0) return alert('Nothing to undo');
+      const action = undoStack.pop();
+      console.log('Undo requested:', action);
+      alert(`Undo triggered for: ${action.type}. (For production: implement soft-deletes or DB transactions)`);
+    });
+
+    function openForm() {
+      form.style.display = 'block';
+      overlay.style.display = 'block';
     }
-  });
-
-  // Selected tree highlight
-  map.addLayer({
-    id: "tree-selected",
-    type: "circle",
-    source: "trees",
-    filter: ["==", ["get", "id"], -1],
-    paint: {
-      "circle-radius": ["interpolate", ["linear"], ["zoom"], 13, 5, 16, 9, 19, 16],
-      "circle-color": "transparent",
-      "circle-stroke-width": 3,
-      "circle-stroke-color": "#facc15"
+    function closeForm() {
+      form.style.display = 'none';
+      overlay.style.display = 'none';
+      currentTreeId = null;
     }
-  });
-
-  updateStats();
-
-  // Click tree → edit
-  map.on("click", "tree-circles", (e) => {
-    if (addMode) return;
-    const f = e.features[0];
-    selectTree(f.properties.id);
-    e.preventDefault();
-  });
-
-  // Click map (not on tree) → add if in add mode
-  map.on("click", (e) => {
-    if (!addMode) return;
-    if (e.defaultPrevented) return;
-    addTree(e.lngLat.lng, e.lngLat.lat);
-  });
-
-  map.on("mouseenter", "tree-circles", () => {
-    if (!addMode) map.getCanvas().style.cursor = "pointer";
-  });
-  map.on("mouseleave", "tree-circles", () => {
-    if (!addMode) map.getCanvas().style.cursor = "";
-  });
-});
-
-// ============================================================================
-// TREE OPERATIONS
-// ============================================================================
-
-function saveSnapshot() {
-  history.push(JSON.stringify(treeData));
-  if (history.length > 50) history.shift();
-}
-
-function refreshMap() {
-  map.getSource("trees").setData(treeData);
-  updateStats();
-}
-
-function updateStats() {
-  const n = treeData.features.length;
-  const avg = n > 0
-    ? (treeData.features.reduce((s, f) => s + (f.properties.height_m || 0), 0) / n).toFixed(1)
-    : 0;
-  document.getElementById("stats").innerHTML = `<b>${n}</b> trees · avg <b>${avg} m</b>`;
-}
-
-function selectTree(id) {
-  const f = treeData.features.find(f => f.properties.id === id);
-  if (!f) return;
-  editingId = id;
-
-  map.setFilter("tree-selected", ["==", ["get", "id"], id]);
-
-  document.getElementById("panel-title").textContent = `Tree #${id}`;
-  document.getElementById("f-species-en").value  = f.properties.species_en  || "";
-  document.getElementById("f-species-jp").value  = f.properties.species_jp  || "";
-  document.getElementById("f-species-lat").value = f.properties.species_lat || "";
-  document.getElementById("f-height").value      = f.properties.height_m    || "";
-  document.getElementById("f-canopy").value      = f.properties.canopy_m2   || "";
-  document.getElementById("f-age").value         = f.properties.age_years   || "";
-  document.getElementById("f-notes").value       = f.properties.notes       || "";
-  document.getElementById("f-photo").value       = f.properties.photo_url   || "";
-
-  document.getElementById("btn-delete").style.display = "block";
-  document.getElementById("panel").classList.add("open");
-}
-
-function addTree(lng, lat) {
-  saveSnapshot();
-
-  const id = nextId++;
-  const feature = {
-    type: "Feature",
-    geometry: { type: "Point", coordinates: [lng, lat] },
-    properties: {
-      id,
-      height_m: null,
-      canopy_m2: null,
-      species_en: "",
-      species_jp: "",
-      species_lat: "",
-      age_years: null,
-      notes: "Manually added",
-      photo_url: ""
+    function clearForm() {
+      form.querySelectorAll('input, textarea').forEach(el => el.value = '');
+      form.querySelectorAll('input[name="height"]').forEach(el => el.checked = false);
     }
-  };
 
-  treeData.features.push(feature);
-  refreshMap();
-  selectTree(id);
-  toast(`🌱 Tree #${id} added — fill in the details`);
-}
+    async function openEditForm(id) {
+      currentTreeId = id;
+      const { data, error } = await supabase.from('trees').select('*').eq('id', id).single();
+      if (error || !data) return alert('Failed to load tree data');
 
-// ============================================================================
-// UI HANDLERS
-// ============================================================================
+      document.getElementById('species-en').value = data.species_en || '';
+      document.getElementById('species-jp').value = data.species_jp || '';
+      document.getElementById('species-latin').value = data.species_latin || '';
+      document.getElementById('canopy').value = data.canopy_area ?? '';
+      document.getElementById('age').value = data.age ?? '';
+      document.getElementById('notes').value = data.notes || '';
+      document.getElementById('photo-url').value = data.photo_url || '';
+      
+      const hr = document.querySelector(`input[name="height"][value="${data.height_range}"]`);
+      if (hr) hr.checked = true;
+      openForm();
+    }
 
-// Save
-document.getElementById("btn-save").addEventListener("click", () => {
-  if (editingId === null) return;
-  saveSnapshot();
+    // 🔹 Save / Delete
+    document.getElementById('btn-save').addEventListener('click', async () => {
+      const payload = {
+        species_en: document.getElementById('species-en').value,
+        species_jp: document.getElementById('species-jp').value,
+        species_latin: document.getElementById('species-latin').value,
+        height_range: document.querySelector('input[name="height"]:checked')?.value || null,
+        canopy_area: document.getElementById('canopy').value ? parseFloat(document.getElementById('canopy').value) : null,
+        age: document.getElementById('age').value ? parseInt(document.getElementById('age').value) : null,
+        notes: document.getElementById('notes').value,
+        photo_url: document.getElementById('photo-url').value
+      };
 
-  const f = treeData.features.find(f => f.properties.id === editingId);
-  if (!f) return;
+      try {
+        if (currentTreeId) {
+          await supabase.from('trees').update(payload).eq('id', currentTreeId);
+          undoStack.push({ type: 'update', id: currentTreeId });
+        } else {
+          const center = map.getCenter();
+          payload.latitude = center.lat;
+          payload.longitude = center.lng;
+          await supabase.from('trees').insert([payload]);
+          undoStack.push({ type: 'insert' });
+        }
+        closeForm();
+        await loadTrees();
+      } catch (err) {
+        console.error('Save failed:', err);
+        alert('Failed to save. Check console.');
+      }
+    });
 
-  f.properties.species_en  = document.getElementById("f-species-en").value;
-  f.properties.species_jp  = document.getElementById("f-species-jp").value;
-  f.properties.species_lat = document.getElementById("f-species-lat").value;
-  f.properties.height_m    = parseFloat(document.getElementById("f-height").value) || null;
-  f.properties.canopy_m2   = parseFloat(document.getElementById("f-canopy").value) || null;
-  f.properties.age_years   = parseInt(document.getElementById("f-age").value) || null;
-  f.properties.notes       = document.getElementById("f-notes").value;
-  f.properties.photo_url   = document.getElementById("f-photo").value;
+    document.getElementById('btn-delete').addEventListener('click', async () => {
+      if (!currentTreeId) return alert('No tree selected');
+      if (!confirm('Permanently delete this tree?')) return;
+      try {
+        await supabase.from('trees').delete().eq('id', currentTreeId);
+        undoStack.push({ type: 'delete', id: currentTreeId });
+        closeForm();
+        await loadTrees();
+      } catch (err) {
+        console.error('Delete failed:', err);
+        alert('Failed to delete.');
+      }
+    });
 
-  refreshMap();
-  closePanel();
-  toast(`✅ Tree #${editingId} saved`);
-});
+    // 🔹 Data Loading
+    async function loadTrees() {
+      try {
+        const { data, error } = await supabase.from('trees').select('*');
+        if (error) throw error;
 
-// Delete
-document.getElementById("btn-delete").addEventListener("click", () => {
-  if (editingId === null) return;
-  saveSnapshot();
+        const geojson = {
+          type: 'FeatureCollection',
+          features: (data || []).filter(t => t.latitude && t.longitude).map(t => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [t.longitude, t.latitude] },
+            properties: t
+          }))
+        };
 
-  treeData.features = treeData.features.filter(f => f.properties.id !== editingId);
-  refreshMap();
-  closePanel();
-  toast(`🗑 Tree #${editingId} deleted`);
-});
+        // Efficiently update WebGL source without recreating layers
+        if (map.getSource('trees')) {
+          map.getSource('trees').setData(geojson);
+        }
+      } catch (err) {
+        console.error('Load failed:', err);
+      }
+    }
 
-// Cancel
-document.getElementById("btn-close").addEventListener("click", closePanel);
+    // 🔹 Exports
+    document.getElementById('btn-export-geojson').addEventListener('click', async () => {
+      const { data } = await supabase.from('trees').select('*');
+      if (!data?.length) return alert('No trees to export');
+      const geojson = {
+        type: 'FeatureCollection',
+        features: data.filter(t => t.latitude && t.longitude).map(t => ({
+          type: 'Feature',
+          geometry: { type: 'Point', coordinates: [t.longitude, t.latitude] },
+          properties: t
+        }))
+      };
+      downloadFile(JSON.stringify(geojson, null, 2), 'honmoku-trees.geojson', 'application/json');
+    });
 
-// Add mode toggle
-document.getElementById("btn-add").addEventListener("click", () => {
-  addMode = !addMode;
-  document.getElementById("btn-add").classList.toggle("active", addMode);
-  document.getElementById("map").classList.toggle("crosshair", addMode);
-  if (addMode) {
-    closePanel();
-    toast("🎯 Click on the map to place a tree");
-  }
-});
+    document.getElementById('btn-export-csv').addEventListener('click', async () => {
+      const { data } = await supabase.from('trees').select('*');
+      if (!data?.length) return alert('No trees to export');
+      const headers = Object.keys(data[0]);
+      const rows = data.map(row => headers.map(h => `"${(row[h] ?? '').toString().replace(/"/g, '""')}"`).join(','));
+      downloadFile([headers.join(','), ...rows].join('\n'), 'honmoku-trees.csv', 'text/csv');
+    });
 
-// Undo
-document.getElementById("btn-undo").addEventListener("click", () => {
-  if (history.length === 0) { toast("Nothing to undo"); return; }
-  treeData = JSON.parse(history.pop());
-  refreshMap();
-  closePanel();
-  toast("↩ Undone");
-});
-
-// Export GeoJSON
-document.getElementById("btn-export").addEventListener("click", () => {
-  const blob = new Blob([JSON.stringify(treeData, null, 2)], { type: "application/json" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "trees.geojson";
-  a.click();
-  URL.revokeObjectURL(url);
-  toast(`⬇ Exported ${treeData.features.length} trees as GeoJSON`);
-});
-
-// Export CSV
-document.getElementById("btn-csv").addEventListener("click", () => {
-  const fields = ["id","species_en","species_jp","species_lat","height_m","canopy_m2","age_years","notes","photo_url","lng","lat"];
-  let csv = fields.join(",") + "\n";
-  treeData.features.forEach(f => {
-    const p = f.properties;
-    const [lng, lat] = f.geometry.coordinates;
-    const row = [
-      p.id,
-      `"${(p.species_en||"").replace(/"/g,'""')}"`,
-      `"${(p.species_jp||"").replace(/"/g,'""')}"`,
-      `"${(p.species_lat||"").replace(/"/g,'""')}"`,
-      p.height_m || "",
-      p.canopy_m2 || "",
-      p.age_years || "",
-      `"${(p.notes||"").replace(/"/g,'""')}"`,
-      `"${(p.photo_url||"").replace(/"/g,'""')}"`,
-      lng, lat
-    ];
-    csv += row.join(",") + "\n";
-  });
-  const blob = new Blob([csv], { type: "text/csv" });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement("a");
-  a.href = url;
-  a.download = "trees.csv";
-  a.click();
-  URL.revokeObjectURL(url);
-  toast(`⬇ Exported ${treeData.features.length} trees as CSV`);
-});
-
-// ============================================================================
-// HELPERS
-// ============================================================================
-
-function closePanel() {
-  editingId = null;
-  document.getElementById("panel").classList.remove("open");
-  map.setFilter("tree-selected", ["==", ["get", "id"], -1]);
-}
-
-function toast(msg) {
-  const el = document.getElementById("toast");
-  el.textContent = msg;
-  el.classList.add("show");
-  setTimeout(() => el.classList.remove("show"), 2500);
-}
-</script>
-
+    function downloadFile(content, filename, type) {
+      const blob = new Blob([content], { type });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = filename;
+      document.body.appendChild(a); a.click(); a.remove();
+      URL.revokeObjectURL(url);
+    }
+  </script>
 </body>
 </html>
