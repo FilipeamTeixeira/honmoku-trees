@@ -14,21 +14,23 @@
 
   <style>
     :root {
-      --paper:  #F7F6F3;
-      --white:  #FFFFFF;
-      --ink:    #1A1A1A;
-      --ink-2:  #555555;
-      --ink-3:  #999999;
-      --accent: #1F7A4D;
-      --border: rgba(26,26,26,0.10);
-      --border-2: rgba(26,26,26,0.06);
-      --r:      16px;
-      --r-sm:   10px;
-      --shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
-      --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
+      --paper:      #F7F6F3;
+      --white:      #FFFFFF;
+      --ink:        #1A1A1A;
+      --ink-2:      #555555;
+      --ink-3:      #999999;
+      --accent:     #1F7A4D;
+      --accent-dim: rgba(31,122,77,0.08);
+      --red:        #dc2626;
+      --red-bg:     #fef2f2;
+      --red-border: #fecaca;
+      --border:     rgba(26,26,26,0.10);
+      --border-2:   rgba(26,26,26,0.05);
+      --r:          16px;
+      --r-sm:       10px;
+      --shadow-lg:  0 10px 15px -3px rgb(0 0 0 / 0.08), 0 4px 6px -4px rgb(0 0 0 / 0.06);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-    /* Fix: form controls don't inherit font by default */
     input, textarea, button, select { font-family: inherit; }
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
@@ -40,211 +42,277 @@
       display: flex;
       flex-direction: column;
       height: 100vh;
+      overflow: hidden;
     }
 
-    /* ── Nav ───────────────────────────────────────── */
+    /* ── Nav ─────────────────────────────────────────── */
     nav {
-      position: sticky; top: 0; z-index: 100;
-      height: 60px;
-      display: flex; align-items: center; justify-content: space-between;
-      padding: 0 24px;
-      background: rgba(247,246,243,0.95);
-      backdrop-filter: blur(12px);
+      flex-shrink: 0;
+      height: 52px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      gap: 10px;
+      background: rgba(247,246,243,0.96);
+      backdrop-filter: blur(14px);
       border-bottom: 0.5px solid var(--border);
+      z-index: 100;
     }
+
     .nav-brand {
-      display: flex; align-items: center; gap: 10px;
+      display: flex; align-items: center;
       text-decoration: none; color: var(--ink);
       font-family: 'DM Serif Display', serif;
-      font-size: 16px;
+      font-size: 15px;
+      flex-shrink: 0;
+      letter-spacing: -0.01em;
     }
     .nav-brand em { color: var(--accent); font-style: normal; }
-    .nav-links { display: flex; align-items: center; gap: 24px; list-style: none; }
-    .nav-links a { font-size: 14px; color: var(--ink-2); text-decoration: none; transition: color 0.2s; }
-    .nav-links a:hover { color: var(--ink); }
 
-    .nav-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
-    .btn-nav {
+    /* vertical divider */
+    .nav-sep {
+      width: 0.5px; height: 18px;
+      background: var(--border);
+      flex-shrink: 0;
+    }
+
+    /* Segmented mode control */
+    .mode-group {
+      display: flex;
+      background: var(--white);
+      border: 0.5px solid var(--border);
+      border-radius: 100px;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+    .mode-btn {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 13px; font-weight: 500;
+      padding: 6px 13px;
+      background: none; border: none; cursor: pointer;
+      color: var(--ink-2);
+      transition: background 0.12s, color 0.12s;
+      white-space: nowrap;
+      line-height: 1;
+    }
+    .mode-btn + .mode-btn { border-left: 0.5px solid var(--border); }
+    .mode-btn:hover:not(:disabled) { background: var(--paper); color: var(--ink); }
+    .mode-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+    .mode-btn.active { background: var(--ink); color: #fff; }
+    .mode-btn.active.danger { background: var(--red); }
+
+    .nav-spacer { flex: 1; }
+
+    /* User pill */
+    .user-pill {
       display: inline-flex; align-items: center; gap: 6px;
-      font-size: 14px; font-weight: 500;
-      padding: 8px 18px;
+      padding: 4px 11px;
+      background: var(--accent-dim);
+      border: 0.5px solid rgba(31,122,77,0.18);
+      border-radius: 100px;
+      font-size: 12px; font-weight: 500; color: var(--accent);
+      white-space: nowrap; flex-shrink: 0;
+    }
+    .user-pill-dot {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent); flex-shrink: 0;
+    }
+
+    .btn-nav {
+      display: inline-flex; align-items: center; gap: 5px;
+      font-size: 13px; font-weight: 500;
+      padding: 6px 14px;
       background: var(--ink); color: #fff;
       border-radius: 100px; text-decoration: none;
-      transition: opacity 0.2s, transform 0.1s;
       border: none; cursor: pointer;
+      transition: opacity 0.15s;
+      white-space: nowrap; flex-shrink: 0;
     }
-    .btn-nav:hover { opacity: 0.85; transform: translateY(-1px); }
-    .btn-nav:active { transform: translateY(0); }
+    .btn-nav:hover { opacity: 0.83; }
     .btn-nav.ghost {
       background: none; color: var(--ink-2);
       border: 0.5px solid var(--border);
     }
     .btn-nav.ghost:hover { background: var(--white); color: var(--ink); opacity: 1; }
-    .btn-nav.danger { background: #fef2f2; color: #dc2626; border: 0.5px solid #fecaca; }
-    .btn-nav.danger:hover { background: #fee2e2; opacity: 1; }
-    .btn-nav:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
+    .btn-nav:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    .user-pill {
-      display: inline-flex; align-items: center; gap: 8px;
-      padding: 6px 14px;
-      background: var(--white); border: 0.5px solid var(--border);
-      border-radius: 100px; font-size: 13px; color: var(--ink-2);
-    }
-    .user-pill i { color: var(--accent); }
-
-    /* ── Main layout ─────────────────────────────── */
+    /* ── Main layout ─────────────────────────────────── */
     #main { display: flex; flex: 1; overflow: hidden; }
-    #map { flex: 1; height: calc(100vh - 60px); background: #e8e6e1; }
+    #map { flex: 1; background: #e4e2dd; }
 
-    /* ── Side Panel ──────────────────────────────── */
+    /* ── Side panel ──────────────────────────────────── */
     #side-panel {
-      width: 420px; max-width: 45vw; background: var(--white); border-left: 0.5px solid var(--border);
-      padding: 24px; overflow-y: auto; display: none; flex-direction: column;
-      box-shadow: var(--shadow-lg); z-index: 50;
-      animation: slideIn 0.2s ease;
+      width: 360px;
+      max-width: 44vw;
+      background: var(--white);
+      border-left: 0.5px solid var(--border);
+      display: none;
+      flex-direction: column;
+      overflow: hidden;
+      box-shadow: var(--shadow-lg);
+      z-index: 50;
+      animation: panelIn 0.17s ease;
     }
-    @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+    @keyframes panelIn {
+      from { transform: translateX(14px); opacity: 0; }
+      to   { transform: none; opacity: 1; }
+    }
     #side-panel.visible { display: flex; }
 
-    #side-panel h3 {
-      font-family: 'DM Serif Display', serif;
-      font-size: 18px; margin-bottom: 16px; color: var(--ink);
-      display: flex; align-items: center; gap: 8px;
+    /* Panel header */
+    .panel-header {
+      display: flex; align-items: center; justify-content: space-between;
+      padding: 16px 18px 14px;
+      border-bottom: 0.5px solid var(--border);
+      flex-shrink: 0;
     }
+    .panel-header h3 {
+      font-family: 'DM Serif Display', serif;
+      font-size: 16px; color: var(--ink);
+      font-weight: normal; letter-spacing: -0.01em;
+    }
+    .panel-close {
+      width: 26px; height: 26px;
+      display: flex; align-items: center; justify-content: center;
+      background: none; border: none; cursor: pointer;
+      color: var(--ink-3); border-radius: 6px;
+      font-size: 15px;
+      transition: background 0.12s, color 0.12s;
+    }
+    .panel-close:hover { background: var(--paper); color: var(--ink); }
+
+    /* Panel scrollable body */
+    .panel-body { flex: 1; overflow-y: auto; padding: 0 18px 24px; }
 
     /* Auth notice */
     #auth-notice {
       background: linear-gradient(135deg, #f0fdf4, #dcfce7);
-      border: 0.5px solid #86efac; border-radius: var(--r);
-      padding: 14px 16px; margin-bottom: 16px; font-size: 13px; color: #166534;
+      border: 0.5px solid #a7f3b0;
+      border-radius: var(--r-sm);
+      padding: 12px 14px;
+      margin: 14px 0 0;
+      font-size: 13px; color: #166534;
       display: none;
     }
     #auth-notice.visible { display: block; }
-    #auth-notice .btn-nav { margin-top: 8px; padding: 6px 14px; font-size: 13px; }
+    #auth-notice strong { display: block; margin-bottom: 3px; font-size: 13px; }
+    #login-from-panel {
+      display: inline-flex; align-items: center;
+      margin-top: 9px; padding: 5px 13px;
+      background: var(--ink); color: #fff;
+      border: none; border-radius: 100px;
+      font-size: 12px; font-weight: 500; cursor: pointer;
+      transition: opacity 0.15s;
+    }
+    #login-from-panel:hover { opacity: 0.85; }
 
     /* Pending panel */
     #pending-panel {
-      background: linear-gradient(135deg, #fffbeb, #fef3c7);
-      border: 0.5px solid #fcd34d; border-radius: var(--r);
-      padding: 14px; margin-bottom: 16px; display: none;
+      background: #fffbeb;
+      border: 0.5px solid #fcd34d;
+      border-radius: var(--r-sm);
+      padding: 14px;
+      margin: 14px 0 0;
+      display: none;
     }
-    #pending-panel.visible { display: block; animation: fadeIn 0.2s ease; }
+    #pending-panel.visible { display: block; animation: fadeIn 0.15s ease; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
     #pending-panel h4 {
-      font-size: 14px; font-weight: 500; color: #92400e; margin-bottom: 10px;
-      display: flex; align-items: center; gap: 6px;
+      font-size: 12px; font-weight: 600;
+      letter-spacing: 0.04em; text-transform: uppercase;
+      color: #92400e; margin-bottom: 10px;
     }
-    #pending-panel .pending-list {
-      max-height: 120px; overflow-y: auto; font-size: 13px; color: #78350f;
-      margin-bottom: 12px; background: rgba(255,255,255,0.6);
-      border-radius: 6px; padding: 8px 12px;
+    .pending-list {
+      max-height: 100px; overflow-y: auto;
+      font-size: 12px; color: #78350f;
+      margin-bottom: 10px;
+      background: rgba(255,255,255,0.5);
+      border-radius: 6px; padding: 6px 10px;
     }
-    #pending-panel .pending-list div {
-      padding: 4px 0; display: flex; justify-content: space-between; align-items: center;
+    .pending-list div {
+      padding: 3px 0;
+      display: flex; justify-content: space-between; align-items: center;
     }
-    #pending-panel .pending-list small {
-      color: #b45309; cursor: pointer; padding: 2px 8px; border-radius: 4px;
-      transition: background 0.15s;
+    .pending-list small {
+      color: #b45309; cursor: pointer; padding: 1px 6px;
+      border-radius: 4px; transition: background 0.12s;
     }
-    #pending-panel .pending-list small:hover { background: #fde68a; }
+    .pending-list small:hover { background: #fde68a; }
+    .pending-actions { display: flex; gap: 7px; }
+    .pending-actions button {
+      flex: 1; padding: 7px;
+      border-radius: 8px; font-size: 12px; font-weight: 500;
+      border: 0.5px solid var(--border); background: var(--white);
+      cursor: pointer; transition: background 0.12s;
+    }
+    .pending-actions button:hover:not(:disabled) { background: var(--paper); }
+    .pending-actions button.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+    .pending-actions button.primary:hover { opacity: 0.88; }
+    .pending-actions button:disabled { opacity: 0.35; cursor: not-allowed; }
 
-    /* Form */
-    #edit-form { display: flex; flex-direction: column; gap: 2px; }
-    #side-panel label {
-      display: block; margin-top: 14px; font-weight: 500; font-size: 13px; color: var(--ink);
-    }
-    #side-panel input, #side-panel textarea {
-      width: 100%; padding: 10px 12px; margin-top: 6px;
-      border: 0.5px solid var(--border); border-radius: var(--r-sm);
-      font-size: 14px; background: var(--white); transition: border-color 0.15s;
-    }
-    #side-panel input:focus, #side-panel textarea:focus {
-      outline: none; border-color: var(--accent);
-      box-shadow: 0 0 0 3px rgba(31,122,77,0.1);
-    }
-    #side-panel textarea { resize: vertical; min-height: 70px; }
+    /* ── Form ────────────────────────────────────────── */
+    #edit-form { display: flex; flex-direction: column; }
 
-    /* Height options */
-    #side-panel .height-options { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
-    #side-panel .height-options label {
-      display: inline-flex; align-items: center; gap: 5px;
-      font-weight: normal; margin-top: 0; font-size: 12px; cursor: pointer;
-      padding: 6px 10px; background: var(--paper);
-      border: 0.5px solid var(--border); border-radius: 6px;
-      transition: background 0.15s, border-color 0.15s;
+    .form-section {
+      padding: 16px 0 8px;
+      border-bottom: 0.5px solid var(--border-2);
     }
-    #side-panel .height-options label:hover { background: #f1f5f9; border-color: #cbd5e1; }
-    #side-panel .height-options input { margin: 0; width: auto; }
-    #side-panel .height-options label:has(input:checked) {
-      background: var(--accent); color: white; border-color: var(--accent);
+    .form-section:last-of-type { border-bottom: none; }
+    .form-section-label {
+      font-size: 10px; font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase;
+      color: var(--ink-3); margin-bottom: 10px;
     }
 
-    /* Button groups */
-    .btn-group { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
-    .btn-group button {
-      flex: 1; min-width: 90px; padding: 10px 14px;
-      border: 0.5px solid var(--border); border-radius: var(--r-sm);
-      background: var(--white); cursor: pointer; font-size: 13px; font-weight: 500;
-      display: inline-flex; align-items: center; justify-content: center; gap: 6px;
-      transition: background 0.15s, transform 0.1s;
-    }
-    .btn-group button:hover { background: #f8fafc; transform: translateY(-1px); }
-    .btn-group button:active { transform: translateY(0); }
-    .btn-group button.primary { background: var(--ink); color: white; border-color: var(--ink); }
-    .btn-group button.primary:hover { opacity: 0.9; }
-    .btn-group button.danger { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
-    .btn-group button.danger:hover { background: #fee2e2; }
+    .form-row { margin-bottom: 9px; }
+    .form-row:last-child { margin-bottom: 0; }
+    .form-row-pair { display: grid; grid-template-columns: 1fr 1fr; gap: 9px; margin-bottom: 9px; }
 
-    /* Empty state */
-    #panel-empty {
-      text-align: center; color: var(--ink-3); padding: 40px 20px; line-height: 1.7;
+    #edit-form label {
+      display: block;
+      font-size: 11px; font-weight: 500;
+      color: var(--ink-3); margin-bottom: 4px;
+      letter-spacing: 0.01em;
     }
-    #panel-empty i { font-size: 28px; color: #cbd5e1; margin-bottom: 12px; display: block; }
+    #edit-form input,
+    #edit-form textarea {
+      width: 100%;
+      padding: 8px 10px;
+      border: 0.5px solid var(--border);
+      border-radius: var(--r-sm);
+      font-size: 13px;
+      background: var(--white);
+      color: var(--ink);
+      transition: border-color 0.12s, box-shadow 0.12s;
+    }
+    #edit-form input:focus,
+    #edit-form textarea:focus {
+      outline: none;
+      border-color: var(--accent);
+      box-shadow: 0 0 0 3px rgba(31,122,77,0.09);
+    }
+    #edit-form textarea { resize: vertical; min-height: 66px; }
 
-    /* Markers */
-    .marker-pending {
-      width: 20px; height: 20px; border-radius: 50%;
-      background: linear-gradient(135deg, #fbbf24, #f59e0b);
-      border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      cursor: pointer; display: flex; align-items: center; justify-content: center;
-      color: white; font-size: 10px; font-weight: 600;
+    /* Height pill selector */
+    .height-options { display: flex; gap: 5px; flex-wrap: wrap; }
+    .height-options label {
+      display: inline-flex; align-items: center;
+      font-size: 12px; font-weight: 400; cursor: pointer;
+      padding: 5px 10px;
+      background: var(--paper);
+      border: 0.5px solid var(--border);
+      border-radius: 100px;
+      color: var(--ink-2);
+      transition: background 0.12s, border-color 0.12s, color 0.12s;
+      margin-bottom: 0;
     }
-    .marker-to-delete {
-      width: 20px; height: 20px; border-radius: 50%;
-      background: linear-gradient(135deg, #ef4444, #dc2626);
-      border: 3px solid #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-      cursor: pointer; animation: pulse 1.5s infinite;
-    }
-    @keyframes pulse {
-      0%, 100% { box-shadow: 0 2px 6px rgba(239,68,68,0.4); }
-      50% { box-shadow: 0 2px 12px rgba(239,68,68,0.7); }
+    .height-options label:hover { background: #f0f4f8; color: var(--ink); }
+    .height-options input[type="radio"] { display: none; }
+    .height-options label:has(input:checked) {
+      background: var(--ink); color: #fff; border-color: var(--ink);
     }
 
-    /* Map cursors */
-    .maplibregl-canvas-container { cursor: grab; }
-    .maplibregl-canvas-container:active { cursor: grabbing; }
-    .maplibregl-canvas-container.mode-add,
-    .maplibregl-canvas-container.mode-delete { cursor: crosshair; }
-
-    /* Toast */
-    #toast-container {
-      position: fixed; bottom: 20px; right: 20px; z-index: 1000;
-      display: flex; flex-direction: column; gap: 10px; pointer-events: none;
-    }
-    .toast {
-      background: var(--white); border-left: 4px solid var(--accent);
-      border-radius: var(--r-sm); padding: 12px 16px;
-      box-shadow: var(--shadow-lg); font-size: 14px;
-      display: flex; align-items: center; gap: 10px;
-      animation: slideIn 0.3s ease, fadeOut 0.3s ease 4.7s forwards;
-      pointer-events: auto; max-width: 320px;
-    }
-    .toast.success { border-left-color: #16a34a; }
-    .toast.error { border-left-color: #dc2626; }
-    .toast.warning { border-left-color: #ca8a04; }
-    @keyframes fadeOut { to { opacity: 0; transform: translateX(20px); } }
-
-    /* Read-only field styling */
+    /* Disabled (read-only) */
     #edit-form input:disabled,
     #edit-form textarea:disabled {
       background: var(--paper);
@@ -253,13 +321,94 @@
       border-color: var(--border-2);
     }
 
+    /* Form actions */
+    .form-actions {
+      display: flex; gap: 7px;
+      padding: 16px 0 2px;
+    }
+    .form-actions button {
+      flex: 1; padding: 9px 10px;
+      border-radius: var(--r-sm);
+      font-size: 13px; font-weight: 500;
+      border: 0.5px solid var(--border);
+      background: var(--white); cursor: pointer;
+      display: inline-flex; align-items: center; justify-content: center;
+      transition: background 0.12s, opacity 0.12s;
+    }
+    .form-actions button:hover { background: var(--paper); }
+    .form-actions button.primary {
+      background: var(--ink); color: #fff; border-color: var(--ink);
+    }
+    .form-actions button.primary:hover { opacity: 0.87; background: var(--ink); }
+    .form-actions button.danger {
+      background: var(--red-bg); color: var(--red); border-color: var(--red-border);
+    }
+    .form-actions button.danger:hover { background: #fee2e2; }
+
+    /* Empty state */
+    #panel-empty {
+      text-align: center; color: var(--ink-3);
+      padding: 48px 16px; font-size: 13px; line-height: 1.9;
+    }
+    .empty-icon { font-size: 30px; display: block; margin-bottom: 10px; opacity: 0.45; }
+
+    /* Map markers */
+    .marker-pending {
+      width: 22px; height: 22px; border-radius: 50%;
+      background: #f59e0b;
+      border: 2.5px solid #fff;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+      cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      color: white; font-size: 12px; font-weight: 700;
+    }
+
+    /* Map cursors */
+    .maplibregl-canvas-container { cursor: grab; }
+    .maplibregl-canvas-container:active { cursor: grabbing; }
+    .maplibregl-canvas-container.mode-add,
+    .maplibregl-canvas-container.mode-delete { cursor: crosshair; }
+
+    /* MapLibre control overrides */
+    .maplibregl-ctrl-group {
+      border-radius: var(--r-sm) !important;
+      box-shadow: 0 2px 8px rgb(0 0 0 / 0.1) !important;
+      border: 0.5px solid var(--border) !important;
+      overflow: hidden;
+    }
+    .maplibregl-ctrl-group button {
+      background: rgba(247,246,243,0.96) !important;
+    }
+
+    /* Toast */
+    #toast-container {
+      position: fixed; bottom: 20px; right: 20px; z-index: 1000;
+      display: flex; flex-direction: column; gap: 8px;
+      pointer-events: none;
+    }
+    .toast {
+      background: var(--white);
+      border-left: 3px solid var(--accent);
+      border-radius: var(--r-sm);
+      padding: 10px 14px;
+      box-shadow: var(--shadow-lg);
+      font-size: 13px;
+      display: flex; align-items: center; gap: 8px;
+      animation: toastIn 0.18s ease, toastOut 0.22s ease 4.78s forwards;
+      pointer-events: auto; max-width: 290px;
+    }
+    .toast.success { border-left-color: #16a34a; }
+    .toast.error   { border-left-color: var(--red); }
+    .toast.warning { border-left-color: #ca8a04; }
+    @keyframes toastIn  { from { opacity: 0; transform: translateX(10px); } to { opacity: 1; transform: none; } }
+    @keyframes toastOut { to   { opacity: 0; transform: translateX(10px); } }
+
     /* Responsive */
-    @media (max-width: 900px) {
+    @media (max-width: 860px) {
       #main { flex-direction: column; }
-      #side-panel { width: 100%; max-width: none; border-left: none; border-top: 0.5px solid var(--border); max-height: 50vh; }
-      #map { height: 50vh; }
-      nav { padding: 0 16px; }
-      .nav-links { display: none; }
+      #side-panel { width: 100%; max-width: none; border-left: none; border-top: 0.5px solid var(--border); max-height: 48vh; }
+      nav { gap: 7px; padding: 0 14px; }
+      .mode-btn { padding: 5px 10px; font-size: 12px; }
     }
   </style>
 </head>
@@ -267,77 +416,131 @@
 
   <nav>
     <a href="index.html" class="nav-brand">moku<em>map</em></a>
-    <ul class="nav-links">
-      <li><a href="index.html#about">The project</a></li>
-      <li><a href="index.html#contribute">Contribute</a></li>
-      <li><a href="map.html" style="color:var(--ink);font-weight:500">Map</a></li>
-    </ul>
-    <!-- All controls in one unified nav-right -->
-    <div class="nav-right">
-      <button id="btn-add-mode" class="btn-nav ghost" disabled>+ Add</button>
-      <button id="btn-delete-mode" class="btn-nav ghost danger" disabled>✕ Remove</button>
-      <span id="user-display" class="user-pill" style="display:none">
-        <i>●</i><span id="user-name"></span>
-      </span>
-      <button id="auth-btn" class="btn-nav ghost">Sign in</button>
-      <a href="index.html" class="btn-nav">← Back</a>
+
+    <div class="nav-sep"></div>
+
+    <!-- Segmented mode control -->
+    <div class="mode-group">
+      <button id="btn-add-mode" class="mode-btn" disabled>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M5 1v8M1 5h8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Add
+      </button>
+      <button id="btn-delete-mode" class="mode-btn danger" disabled>
+        <svg width="10" height="10" viewBox="0 0 10 10" fill="none" aria-hidden="true">
+          <path d="M1.5 1.5l7 7M8.5 1.5l-7 7" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"/>
+        </svg>
+        Remove
+      </button>
     </div>
+
+    <div class="nav-spacer"></div>
+
+    <!-- Auth area -->
+    <span id="user-display" class="user-pill" style="display:none">
+      <span class="user-pill-dot"></span>
+      <span id="user-name"></span>
+    </span>
+    <button id="auth-btn" class="btn-nav ghost">Sign in</button>
+
+    <div class="nav-sep"></div>
+
+    <a href="index.html" class="btn-nav ghost">← Back</a>
   </nav>
 
   <div id="main">
     <div id="map"></div>
 
     <div id="side-panel">
-      <h3><span id="panel-title">Tree Details</span></h3>
-
-      <!-- Auth notice (shown when not logged in, panel open) -->
-      <div id="auth-notice">
-        <strong>🔐 Sign in to contribute</strong><br>
-        Adding or editing trees requires an approved account.
-        <button id="login-from-panel" class="btn-nav" style="margin-top:8px">Sign in</button>
+      <div class="panel-header">
+        <h3 id="panel-title">Tree details</h3>
+        <button class="panel-close" id="btn-cancel" aria-label="Close panel">✕</button>
       </div>
 
-      <!-- Pending operations panel -->
-      <div id="pending-panel">
-        <h4><span id="pending-title">Pending Additions (0)</span></h4>
-        <div class="pending-list" id="pending-list"></div>
-        <div class="btn-group">
-          <button id="btn-confirm-pending" class="primary" disabled>✓ Confirm All</button>
-          <button id="btn-cancel-pending">✕ Cancel</button>
-        </div>
-      </div>
+      <div class="panel-body">
 
-      <!-- Edit / view form -->
-      <form id="edit-form">
-        <input type="hidden" id="tree-id">
-        <label>Species (English)<input type="text" id="species-en" placeholder="e.g., Japanese Maple"></label>
-        <label>Species (Japanese)<input type="text" id="species-jp" placeholder="例: イロハモミジ"></label>
-        <label>Species (Latin)<input type="text" id="species-latin" placeholder="e.g., Acer palmatum"></label>
-
-        <label>Tree height (m)</label>
-        <div class="height-options">
-          <label><input type="radio" name="height" value="<5"><span>&lt; 5 m</span></label>
-          <label><input type="radio" name="height" value="5-10"><span>5 – 10 m</span></label>
-          <label><input type="radio" name="height" value="10-20"><span>10 – 20 m</span></label>
-          <label><input type="radio" name="height" value=">20"><span>&gt; 20 m</span></label>
+        <div id="auth-notice">
+          <strong>Sign in to contribute</strong>
+          Editing trees requires an approved account.
+          <button id="login-from-panel">Sign in →</button>
         </div>
 
-        <label>Canopy area (m²)<input type="number" step="0.1" id="canopy" placeholder="e.g., 12.5"></label>
-        <label>Estimated age (years)<input type="number" id="age_years" placeholder="e.g., 45"></label>
-        <label>Notes<textarea id="notes" placeholder="Additional observations..."></textarea></label>
-        <label>Photo URL<input type="url" id="photo-url" placeholder="https://..."></label>
-
-        <div class="btn-group">
-          <button type="button" id="btn-save" class="primary">💾 Save</button>
-          <button type="button" id="btn-delete" class="danger">🗑 Delete</button>
-          <button type="button" id="btn-cancel">✕ Close</button>
+        <div id="pending-panel">
+          <h4 id="pending-title">Pending additions (0)</h4>
+          <div class="pending-list" id="pending-list"></div>
+          <div class="pending-actions">
+            <button id="btn-confirm-pending" class="primary" disabled>✓ Confirm all</button>
+            <button id="btn-cancel-pending">Discard</button>
+          </div>
         </div>
-      </form>
 
-      <!-- Empty state -->
-      <div id="panel-empty">
-        <i>🌳</i>
-        <p>Click a tree to view its details,<br>or use <strong>Add / Remove</strong> above.</p>
+        <form id="edit-form">
+          <input type="hidden" id="tree-id">
+
+          <div class="form-section">
+            <p class="form-section-label">Species</p>
+            <div class="form-row">
+              <label>English name</label>
+              <input type="text" id="species-en" placeholder="e.g., Japanese Maple">
+            </div>
+            <div class="form-row">
+              <label>Japanese name</label>
+              <input type="text" id="species-jp" placeholder="例: イロハモミジ">
+            </div>
+            <div class="form-row">
+              <label>Latin name</label>
+              <input type="text" id="species-latin" placeholder="e.g., Acer palmatum">
+            </div>
+          </div>
+
+          <div class="form-section">
+            <p class="form-section-label">Measurements</p>
+            <div class="form-row">
+              <label>Height</label>
+              <div class="height-options">
+                <label><input type="radio" name="height" value="<5"> &lt; 5 m</label>
+                <label><input type="radio" name="height" value="5-10"> 5–10 m</label>
+                <label><input type="radio" name="height" value="10-20"> 10–20 m</label>
+                <label><input type="radio" name="height" value=">20"> &gt; 20 m</label>
+              </div>
+            </div>
+            <div class="form-row-pair">
+              <div>
+                <label>Canopy (m²)</label>
+                <input type="number" step="0.1" id="canopy" placeholder="e.g., 12.5">
+              </div>
+              <div>
+                <label>Age (years)</label>
+                <input type="number" id="age_years" placeholder="e.g., 45">
+              </div>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <p class="form-section-label">Notes &amp; photo</p>
+            <div class="form-row">
+              <label>Field notes</label>
+              <textarea id="notes" placeholder="Additional observations…"></textarea>
+            </div>
+            <div class="form-row">
+              <label>Photo URL</label>
+              <input type="url" id="photo-url" placeholder="https://…">
+            </div>
+          </div>
+
+          <div class="form-actions">
+            <button type="button" id="btn-save" class="primary">Save</button>
+            <button type="button" id="btn-delete" class="danger">Delete</button>
+          </div>
+        </form>
+
+        <div id="panel-empty">
+          <span class="empty-icon">🌳</span>
+          Click any tree to view its details,<br>
+          or use <strong>Add / Remove</strong> above.
+        </div>
+
       </div>
     </div>
   </div>
@@ -350,7 +553,7 @@
     const { createClient } = window.supabase;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // ── Map setup ─────────────────────────────────────
+    // ── Map ───────────────────────────────────────────
     const map = new maplibregl.Map({
       container: 'map',
       style: {
@@ -359,7 +562,7 @@
           satellite: {
             type: 'raster',
             tiles: ['https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg'],
-            tileSize: 256, maxzoom: 18
+            tileSize: 256, maxzoom: 18, attribution: '国土地理院'
           }
         },
         layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }]
@@ -378,22 +581,22 @@
     };
 
     const els = {
-      panel: document.getElementById('side-panel'),
-      panelTitle: document.getElementById('panel-title'),
-      editForm: document.getElementById('edit-form'),
-      panelEmpty: document.getElementById('panel-empty'),
+      panel:        document.getElementById('side-panel'),
+      panelTitle:   document.getElementById('panel-title'),
+      editForm:     document.getElementById('edit-form'),
+      panelEmpty:   document.getElementById('panel-empty'),
       pendingPanel: document.getElementById('pending-panel'),
-      pendingList: document.getElementById('pending-list'),
+      pendingList:  document.getElementById('pending-list'),
       pendingTitle: document.getElementById('pending-title'),
-      authNotice: document.getElementById('auth-notice'),
-      authBtn: document.getElementById('auth-btn'),
-      userDisplay: document.getElementById('user-display'),
-      userName: document.getElementById('user-name'),
-      mapCanvas: null,
+      authNotice:   document.getElementById('auth-notice'),
+      authBtn:      document.getElementById('auth-btn'),
+      userDisplay:  document.getElementById('user-display'),
+      userName:     document.getElementById('user-name'),
+      mapCanvas:    null,
       toastContainer: document.getElementById('toast-container')
     };
 
-    // ── Toast system ─────────────────────────────────
+    // ── Toast ─────────────────────────────────────────
     function showToast(msg, type = 'info', dur = 5000) {
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
@@ -408,11 +611,10 @@
       const { data: { session } } = await supabase.auth.getSession();
       state.session = session;
       updateAuthUI();
-
       supabase.auth.onAuthStateChange(async (event, sess) => {
         state.session = sess;
         updateAuthUI();
-        if (event === 'SIGNED_IN') showToast('✓ Signed in', 'success');
+        if (event === 'SIGNED_IN')  showToast('✓ Signed in', 'success');
         if (event === 'SIGNED_OUT') { showToast('Signed out', 'info'); exitMode(); }
       });
     }
@@ -430,11 +632,9 @@
         els.userDisplay.style.display = 'none';
       }
 
-      // Show auth notice in panel only when no tree is selected
       if (els.panel.classList.contains('visible') && !state.currentTreeId) {
         els.authNotice.classList.toggle('visible', !loggedIn);
       }
-
       if (state.currentTreeId) updateFormEditMode();
 
       ['btn-add-mode', 'btn-delete-mode'].forEach(id => {
@@ -443,39 +643,44 @@
       });
     }
 
-    // Single handler for auth button — no duplication
     function toggleAuth() {
-      if (state.session) {
-        supabase.auth.signOut();
-      } else {
-        window.location.href = 'login.html';
-      }
+      if (state.session) supabase.auth.signOut();
+      else window.location.href = 'login.html';
     }
     els.authBtn.addEventListener('click', toggleAuth);
     document.getElementById('login-from-panel').addEventListener('click', toggleAuth);
 
-    // ── Map init ─────────────────────────────────────
+    // ── Map layers ────────────────────────────────────
     map.on('load', () => {
       els.mapCanvas = map.getCanvasContainer();
 
       map.addSource('trees', {
         type: 'geojson',
         data: { type: 'FeatureCollection', features: [] },
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50
+        cluster: true, clusterMaxZoom: 14, clusterRadius: 50
       });
 
       map.addLayer({
         id: 'tree-clusters', type: 'circle', source: 'trees',
         filter: ['has', 'point_count'],
-        paint: { 'circle-color': '#3b82f6', 'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40] }
+        paint: {
+          'circle-color': '#3b82f6',
+          'circle-opacity': 0.82,
+          'circle-radius': ['step', ['get', 'point_count'], 16, 100, 24, 750, 34],
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': '#fff'
+        }
       });
-
       map.addLayer({
         id: 'tree-points', type: 'circle', source: 'trees',
         filter: ['!', ['has', 'point_count']],
-        paint: { 'circle-radius': 7, 'circle-color': '#22c55e' }
+        paint: {
+          'circle-radius': 7,
+          'circle-color': '#22c55e',
+          'circle-opacity': 0.9,
+          'circle-stroke-width': 1.5,
+          'circle-stroke-color': '#fff'
+        }
       });
 
       setupInteractions();
@@ -497,29 +702,24 @@
         });
       });
 
-      // Single, unified click handler for tree points
       map.on('click', 'tree-points', e => {
         const id = e.features[0].properties.id;
-        if (state.mode === 'delete' && state.session) {
-          togglePendingDelete(id);
-          return;
-        }
+        if (state.mode === 'delete' && state.session) { togglePendingDelete(id); return; }
         if (state.mode === 'add') return;
         openEditPanel(id);
       });
 
-      // Add mode: click on empty map area
       map.on('click', e => {
         if (state.mode !== 'add' || !state.session) return;
-        const features = map.queryRenderedFeatures(e.point, { layers: ['tree-points', 'tree-clusters'] });
-        if (features.length === 0) addPendingTree(e.lngLat.lng, e.lngLat.lat);
+        const hit = map.queryRenderedFeatures(e.point, { layers: ['tree-points', 'tree-clusters'] });
+        if (!hit.length) addPendingTree(e.lngLat.lng, e.lngLat.lat);
       });
 
       map.on('movestart', () => { if (state.mode) els.mapCanvas.classList.add(`mode-${state.mode}`); });
-      map.on('moveend', () => { if (!state.mode) els.mapCanvas.classList.remove('mode-add', 'mode-delete'); });
+      map.on('moveend',   () => { if (!state.mode) els.mapCanvas.classList.remove('mode-add', 'mode-delete'); });
     }
 
-    // ── Mode toggles ─────────────────────────────────
+    // ── Mode toggles ──────────────────────────────────
     document.getElementById('btn-add-mode').addEventListener('click', () => {
       if (!state.session) { showToast('Sign in to add trees', 'warning'); return; }
       toggleMode('add');
@@ -532,9 +732,8 @@
     async function toggleMode(newMode) {
       if (state.mode === newMode) { await exitModeWithConfirmation(); return; }
       if (state.mode) { if (!await exitModeWithConfirmation()) return; }
-
       state.mode = newMode;
-      showPendingPanel(newMode);
+      showPendingPanel();
       els.mapCanvas.classList.add(`mode-${newMode}`);
       document.getElementById(newMode === 'add' ? 'btn-add-mode' : 'btn-delete-mode').classList.add('active');
       if (newMode === 'delete') updateDeleteHighlights();
@@ -544,14 +743,12 @@
       const hasAdds = state.pendingAdds.length > 0;
       const hasDeletes = state.pendingDeletes.size > 0;
       if (hasAdds || hasDeletes) {
-        const action = hasAdds ? 'add' : 'delete';
-        const count = hasAdds ? state.pendingAdds.length : state.pendingDeletes.size;
-        if (confirm(`You have ${count} pending ${action} operation(s).\n\nSave to database?`)) {
+        const type = hasAdds ? 'add' : 'delete';
+        const n = hasAdds ? state.pendingAdds.length : state.pendingDeletes.size;
+        if (confirm(`You have ${n} pending ${type}(s).\n\nSave to database?`)) {
           if (hasAdds) await confirmPendingAdds();
           if (hasDeletes) await confirmPendingDeletes();
-        } else {
-          discardPending();
-        }
+        } else { discardPending(); }
       }
       exitMode();
       return true;
@@ -572,7 +769,7 @@
       map.setPaintProperty('tree-points', 'circle-color', '#22c55e');
     }
 
-    // ── Pending operations ───────────────────────────
+    // ── Pending ops ───────────────────────────────────
     function addPendingTree(lng, lat) {
       const tempId = `temp_${++state.tempIdCounter}`;
       state.pendingAdds.push({ lat, lng, tempId });
@@ -580,13 +777,13 @@
       el.className = 'marker-pending'; el.innerHTML = '+'; el.title = 'Click to remove';
       el.addEventListener('click', e => { e.stopPropagation(); removePendingTree(tempId); });
       const marker = new maplibregl.Marker({ element: el, anchor: 'center' }).setLngLat([lng, lat]).addTo(map);
-      state.tempMarkers[tempId] = { marker, lng, lat };
+      state.tempMarkers[tempId] = { marker };
       renderPendingList();
     }
 
     function removePendingTree(tempId) {
-      const entry = state.tempMarkers[tempId];
-      if (entry) { entry.marker.remove(); delete state.tempMarkers[tempId]; }
+      state.tempMarkers[tempId]?.marker.remove();
+      delete state.tempMarkers[tempId];
       state.pendingAdds = state.pendingAdds.filter(p => p.tempId !== tempId);
       renderPendingList();
     }
@@ -600,25 +797,28 @@
     function updateDeleteHighlights() {
       const ids = Array.from(state.pendingDeletes);
       map.setPaintProperty('tree-points', 'circle-color',
-        ids.length === 0 ? '#22c55e' : ['case', ['in', ['get', 'id'], ['literal', ids]], '#ef4444', '#22c55e']);
+        ids.length === 0 ? '#22c55e'
+          : ['case', ['in', ['get', 'id'], ['literal', ids]], '#ef4444', '#22c55e']);
     }
 
     function renderPendingList() {
       const isAdd = state.mode === 'add';
       const items = isAdd ? state.pendingAdds : Array.from(state.pendingDeletes);
-      els.pendingTitle.textContent = isAdd ? `Pending Additions (${items.length})` : `Pending Deletions (${items.length})`;
+      els.pendingTitle.textContent = isAdd
+        ? `Pending additions (${items.length})`
+        : `Pending removals (${items.length})`;
 
       if (items.length === 0) {
-        els.pendingList.innerHTML = '<div style="color:#92400e;text-align:center">No items yet</div>';
+        els.pendingList.innerHTML = `<div style="opacity:0.55;justify-content:center">${isAdd ? 'Click map to place trees' : 'Click trees to mark'}</div>`;
       } else if (isAdd) {
         els.pendingList.innerHTML = items.map((p, i) =>
-          `<div><span>#${i+1} ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span> <small data-id="${p.tempId}">✕</small></div>`
+          `<div><span>#${i+1} &thinsp;${p.lat.toFixed(5)}, ${p.lng.toFixed(5)}</span><small data-id="${p.tempId}">✕</small></div>`
         ).join('');
         els.pendingList.querySelectorAll('small').forEach(el =>
           el.addEventListener('click', e => { e.stopPropagation(); removePendingTree(el.dataset.id); }));
       } else {
         els.pendingList.innerHTML = items.map((id, i) =>
-          `<div><span>#${i+1} Tree ${id.toString().slice(0, 6)}…</span></div>`).join('');
+          `<div><span>#${i+1} &thinsp;Tree ${id.toString().slice(0, 8)}…</span></div>`).join('');
       }
       document.getElementById('btn-confirm-pending').disabled = items.length === 0;
     }
@@ -631,10 +831,9 @@
       els.authNotice.classList.toggle('visible', !state.session);
       renderPendingList();
     }
-
     function hidePendingPanel() { els.pendingPanel.classList.remove('visible'); }
 
-    // ── Confirm handlers ─────────────────────────────
+    // ── Confirm handlers ──────────────────────────────
     document.getElementById('btn-confirm-pending').addEventListener('click', async () => {
       if (!state.session) { showToast('Sign in to confirm', 'warning'); return; }
       if (state.mode === 'add') await confirmPendingAdds();
@@ -649,20 +848,18 @@
     });
 
     async function confirmPendingAdds() {
-      if (state.pendingAdds.length === 0 || !state.session) return;
+      if (!state.pendingAdds.length || !state.session) return;
       const userId = state.session.user.id;
-      const userName = state.session.user.user_metadata?.full_name || state.session.user.email?.split('@')[0] || 'Anonymous';
-
+      const userName = state.session.user.user_metadata?.full_name
+        || state.session.user.email?.split('@')[0] || 'Anonymous';
       const treesToAdd = state.pendingAdds.map(p => ({
         latitude: p.lat, longitude: p.lng,
         species_en: '', species_jp: '', species_lat: '',
         height_m: null, canopy_m2: null, age_years: null, notes: '', photo_url: '',
         editor_id: userId, editor_name: userName
       }));
-
       const { error } = await supabase.from('trees').insert(treesToAdd);
       if (error) { showToast('Failed to add: ' + error.message, 'error', 8000); return; }
-
       state.undoStack.push({ type: 'batch-insert', count: treesToAdd.length });
       Object.values(state.tempMarkers).forEach(({ marker }) => marker.remove());
       state.tempMarkers = {}; state.pendingAdds = [];
@@ -672,20 +869,18 @@
     }
 
     async function confirmPendingDeletes() {
-      if (state.pendingDeletes.size === 0) return;
+      if (!state.pendingDeletes.size) return;
       const ids = Array.from(state.pendingDeletes);
-
       const { error } = await supabase.from('trees').delete().in('id', ids);
       if (error) { showToast('Failed to delete: ' + error.message, 'error', 8000); return; }
-
       state.undoStack.push({ type: 'batch-delete', ids });
       state.pendingDeletes.clear();
       hidePendingPanel(); exitMode();
       await loadTrees();
-      showToast(`✓ Deleted ${ids.length} tree(s)`, 'success');
+      showToast(`✓ Removed ${ids.length} tree(s)`, 'success');
     }
 
-    // ── Edit panel ───────────────────────────────────
+    // ── Edit panel ────────────────────────────────────
     function openEditPanel(id) {
       state.currentTreeId = id;
       els.panel.classList.add('visible');
@@ -697,27 +892,26 @@
     }
 
     function updateFormEditMode() {
-      const isEditing = !!state.session;
-      els.editForm.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(el => el.disabled = !isEditing);
-      document.getElementById('btn-save').style.display = isEditing ? 'inline-flex' : 'none';
-      document.getElementById('btn-delete').style.display = isEditing ? 'inline-flex' : 'none';
-      els.panelTitle.textContent = isEditing ? 'Edit Tree' : 'Tree Details';
+      const canEdit = !!state.session;
+      els.editForm.querySelectorAll('input:not([type="hidden"]), textarea, select')
+        .forEach(el => el.disabled = !canEdit);
+      document.getElementById('btn-save').style.display   = canEdit ? 'inline-flex' : 'none';
+      document.getElementById('btn-delete').style.display = canEdit ? 'inline-flex' : 'none';
+      els.panelTitle.textContent = canEdit ? 'Edit tree' : 'Tree details';
     }
 
     async function loadTreeData(id) {
       const { data, error } = await supabase.from('trees').select('*').eq('id', id).single();
-      if (error || !data) { showToast('Failed to load tree details', 'error'); closePanel(); return; }
+      if (error || !data) { showToast('Failed to load tree', 'error'); closePanel(); return; }
 
-      // Fix: use empty string for missing values, not '—'
-      // This prevents '—' from being written back to the DB on save
-      document.getElementById('tree-id').value = data.id;
-      document.getElementById('species-en').value = data.species_en || '';
-      document.getElementById('species-jp').value = data.species_jp || '';
+      document.getElementById('tree-id').value       = data.id;
+      document.getElementById('species-en').value    = data.species_en || '';
+      document.getElementById('species-jp').value    = data.species_jp || '';
       document.getElementById('species-latin').value = data.species_lat || '';
-      document.getElementById('canopy').value = data.canopy_m2 ?? '';
-      document.getElementById('age_years').value = data.age_years ?? '';
-      document.getElementById('notes').value = data.notes || '';
-      document.getElementById('photo-url').value = data.photo_url || '';
+      document.getElementById('canopy').value        = data.canopy_m2 ?? '';
+      document.getElementById('age_years').value     = data.age_years ?? '';
+      document.getElementById('notes').value         = data.notes || '';
+      document.getElementById('photo-url').value     = data.photo_url || '';
 
       document.querySelectorAll('input[name="height"]').forEach(el => el.checked = false);
       const hr = document.querySelector(`input[name="height"][value="${data.height_m}"]`);
@@ -730,35 +924,29 @@
       els.panel.classList.remove('visible');
       state.currentTreeId = null;
       els.editForm.reset();
-      document.querySelectorAll('#edit-form input[name="height"]').forEach(el => el.checked = false);
+      document.querySelectorAll('input[name="height"]').forEach(el => el.checked = false);
     }
     document.getElementById('btn-cancel').addEventListener('click', closePanel);
 
     document.getElementById('btn-save').addEventListener('click', async () => {
       if (!state.session) { showToast('Sign in to save', 'warning'); return; }
-      const id = state.currentTreeId;
-      if (!id) return;
-
+      const id = state.currentTreeId; if (!id) return;
       const payload = {
-        species_en: document.getElementById('species-en').value,
-        species_jp: document.getElementById('species-jp').value,
+        species_en:  document.getElementById('species-en').value,
+        species_jp:  document.getElementById('species-jp').value,
         species_lat: document.getElementById('species-latin').value,
-        height_m: document.querySelector('input[name="height"]:checked')?.value || null,
-        canopy_m2: document.getElementById('canopy').value ? parseFloat(document.getElementById('canopy').value) : null,
-        age_years: document.getElementById('age_years').value ? parseInt(document.getElementById('age_years').value) : null,
-        notes: document.getElementById('notes').value,
-        photo_url: document.getElementById('photo-url').value,
-        editor_id: state.session.user.id,
+        height_m:    document.querySelector('input[name="height"]:checked')?.value || null,
+        canopy_m2:   document.getElementById('canopy').value    ? parseFloat(document.getElementById('canopy').value)    : null,
+        age_years:   document.getElementById('age_years').value ? parseInt(document.getElementById('age_years').value)   : null,
+        notes:       document.getElementById('notes').value,
+        photo_url:   document.getElementById('photo-url').value,
+        editor_id:   state.session.user.id,
         editor_name: state.session.user.user_metadata?.full_name || state.session.user.email?.split('@')[0]
       };
-
-      // Fix: check returned error rather than relying on throw
       const { error } = await supabase.from('trees').update(payload).eq('id', id);
       if (error) { showToast('Failed to save: ' + error.message, 'error', 8000); return; }
-
       state.undoStack.push({ type: 'update', id });
-      closePanel();
-      await loadTrees();
+      closePanel(); await loadTrees();
       showToast('✓ Tree updated', 'success');
     });
 
@@ -766,22 +954,16 @@
       if (!state.session) { showToast('Sign in to delete', 'warning'); return; }
       const id = state.currentTreeId;
       if (!id || !confirm('Permanently delete this tree?')) return;
-
-      // Fix: check returned error rather than relying on throw
       const { error } = await supabase.from('trees').delete().eq('id', id);
       if (error) { showToast('Failed to delete: ' + error.message, 'error', 8000); return; }
-
       state.undoStack.push({ type: 'delete', id });
-      closePanel();
-      await loadTrees();
+      closePanel(); await loadTrees();
       showToast('✓ Tree deleted', 'success');
     });
 
-    // ── Data fetching ─────────────────────────────────
-    // Single source of truth — loadTrees uses this too, eliminating the duplicate
+    // ── Data ──────────────────────────────────────────
     async function fetchAllTrees() {
-      const PAGE_SIZE = 1000;
-      let all = [], from = 0;
+      const PAGE_SIZE = 1000; let all = [], from = 0;
       while (true) {
         const { data, error } = await supabase.from('trees')
           .select('*').range(from, from + PAGE_SIZE - 1).order('id');
@@ -797,45 +979,25 @@
     async function loadTrees() {
       try {
         state.trees = await fetchAllTrees();
-
         const features = state.trees
-          .filter(t => {
-            const lat = parseFloat(t.latitude), lng = parseFloat(t.longitude);
-            return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
-          })
-          .map(t => ({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [parseFloat(t.longitude), parseFloat(t.latitude)] },
-            properties: t
-          }));
-
-        const geojson = { type: 'FeatureCollection', features };
+          .filter(t => { const la = parseFloat(t.latitude), lo = parseFloat(t.longitude); return !isNaN(la) && !isNaN(lo) && la !== 0 && lo !== 0; })
+          .map(t => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [parseFloat(t.longitude), parseFloat(t.latitude)] }, properties: t }));
         if (map.getSource('trees')) {
-          map.getSource('trees').setData(geojson);
+          map.getSource('trees').setData({ type: 'FeatureCollection', features });
           if (state.mode === 'delete') updateDeleteHighlights();
         }
-      } catch (err) {
-        console.error('Load failed:', err);
-        showToast('Failed to load trees', 'error');
-      }
+      } catch (err) { console.error(err); showToast('Failed to load trees', 'error'); }
     }
 
-    // ── Exports ──────────────────────────────────────
+    // ── Exports ───────────────────────────────────────
     document.getElementById('btn-export-geojson')?.addEventListener('click', async () => {
       try {
         const data = await fetchAllTrees();
         if (!data?.length) return showToast('No trees to export', 'warning');
-        const geojson = {
-          type: 'FeatureCollection',
-          features: data.filter(t => t.latitude && t.longitude).map(t => ({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [t.longitude, t.latitude] },
-            properties: t
-          }))
-        };
+        const geojson = { type: 'FeatureCollection', features: data.filter(t => t.latitude && t.longitude).map(t => ({ type: 'Feature', geometry: { type: 'Point', coordinates: [t.longitude, t.latitude] }, properties: t })) };
         downloadFile(JSON.stringify(geojson, null, 2), 'mokumap.geojson', 'application/json');
         showToast('✓ GeoJSON exported', 'success');
-      } catch (err) { showToast('Export failed: ' + err.message, 'error'); }
+      } catch (err) { showToast('Export failed', 'error'); }
     });
 
     document.getElementById('btn-export-csv')?.addEventListener('click', async () => {
@@ -846,7 +1008,7 @@
         const rows = data.map(row => headers.map(h => `"${(row[h] ?? '').toString().replace(/"/g, '""')}"`).join(','));
         downloadFile([headers.join(','), ...rows].join('\n'), 'mokumap.csv', 'text/csv');
         showToast('✓ CSV exported', 'success');
-      } catch (err) { showToast('Export failed: ' + err.message, 'error'); }
+      } catch (err) { showToast('Export failed', 'error'); }
     });
 
     function downloadFile(content, filename, type) {
@@ -855,11 +1017,8 @@
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
 
-    // ── Init ─────────────────────────────────────────
-    async function init() {
-      await initAuth();
-      closePanel();
-    }
+    // ── Init ──────────────────────────────────────────
+    async function init() { await initAuth(); closePanel(); }
     init();
   </script>
 </body>
