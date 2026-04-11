@@ -1,331 +1,194 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Honmoku Tree Map — Editor</title>
-  <!-- MapLibre CSS -->
-  <link rel="stylesheet" href="https://esm.sh/maplibre-gl@4/dist/maplibre-gl.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Honmoku Trees — Community tree map of Honmoku, Yokohama</title>
+  <meta name="description" content="A community project documenting the trees, species, and canopy of Honmoku neighbourhood in Yokohama, Japan." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
+  <script src="config.js"></script>
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: system-ui, -apple-system, sans-serif; background: #f8f9fa; }
-    
-    #toolbar { 
-      padding: 10px; background: #fff; display: flex; gap: 10px; flex-wrap: wrap; 
-      align-items: center; border-bottom: 1px solid #ddd; height: 46px; position: sticky; top: 0; z-index: 10;
-    }
-    #toolbar button { padding: 6px 12px; cursor: pointer; border: 1px solid #ccc; border-radius: 4px; background: #f1f1f1; }
-    #toolbar button:hover { background: #e2e2e2; }
-    
-    /* ✅ CRITICAL: Explicit dimensions prevent black screen */
-    #map { height: calc(100vh - 46px); width: 100%; position: relative; }
-    
-    /* Modal */
-    #edit-form { 
-      display: none; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); 
-      background: white; padding: 20px; border-radius: 8px; box-shadow: 0 4px 16px rgba(0,0,0,0.25); 
-      z-index: 1000; width: 90%; max-width: 420px; max-height: 85vh; overflow-y: auto; 
-    }
-    #edit-form h3 { margin-bottom: 12px; }
-    #edit-form label { display: block; margin-top: 12px; font-weight: 500; font-size: 14px; }
-    #edit-form input, #edit-form textarea, #edit-form select { 
-      width: 100%; padding: 8px; margin-top: 4px; border: 1px solid #ccc; border-radius: 4px; 
-    }
-    #edit-form .btn-group { margin-top: 16px; display: flex; gap: 10px; }
-    .overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; }
-    .height-options { display: flex; gap: 12px; margin-top: 6px; flex-wrap: wrap; }
-    .height-options label { display: flex; align-items: center; gap: 4px; font-weight: normal; margin-top: 12px; cursor: pointer; }
-    .height-options input { margin: 0; width: auto; }
-    
-    /* MapLibre cursor fixes */
-    .maplibregl-canvas-container { cursor: grab; }
-    .maplibregl-canvas-container:active { cursor: grabbing; }
+    :root { --paper:#F7F6F3; --white:#FFFFFF; --ink:#1A1A1A; --ink-2:#555555; --ink-3:#999999; --accent:#1F7A4D; --border:rgba(26,26,26,0.10); --r:16px; }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--paper);color:var(--ink);font-size:17px;line-height:1.7}
+    nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(247,246,243,0.90);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--border)}
+    .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
+    .brand-icon{width:30px;height:30px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+    .brand-name{font-family:'DM Serif Display',serif;font-size:16px}
+    .brand-name em{color:var(--accent);font-style:normal}
+    .nav-links{display:flex;align-items:center;gap:32px;list-style:none}
+    .nav-links a{font-size:14px;color:var(--ink-2);text-decoration:none}
+    .nav-links a:hover{color:var(--ink)}
+    .nav-right{display:flex;align-items:center;gap:10px}
+    .btn-nav{display:inline-flex;align-items:center;font-size:14px;font-weight:500;padding:7px 20px;background:var(--ink);color:#fff;border-radius:100px;text-decoration:none}
+    .btn-nav.ghost{background:none;color:var(--ink-2);border:0.5px solid var(--border)}
+    .btn-nav.ghost:hover{background:var(--white);color:var(--ink)}
+    section{padding:120px 32px;max-width:1080px;margin:0 auto}
+    .hero{padding-top:172px;padding-bottom:120px;text-align:center}
+    .hero-kana{font-size:13px;letter-spacing:0.2em;color:var(--ink-3);margin-bottom:28px}
+    .hero h1{font-family:'DM Serif Display',serif;font-size:clamp(48px,7vw,80px);line-height:1.06;margin-bottom:24px}
+    .hero h1 em{font-style:italic;color:var(--ink-2)}
+    .hero-sub{font-size:18px;color:var(--ink-2);max-width:520px;margin:0 auto 48px}
+    .hero-actions{display:flex;gap:16px;justify-content:center;flex-wrap:wrap}
+    .btn-primary{display:inline-flex;align-items:center;gap:8px;padding:14px 32px;background:var(--ink);color:var(--white);border-radius:100px;font-size:15px;font-weight:500;text-decoration:none}
+    .btn-ghost{font-size:15px;color:var(--ink-2);text-decoration:none;border-bottom:1px solid var(--border)}
+    .hero-stat{margin-top:52px;font-size:13px;color:var(--ink-3)}
+    .hero-stat b{color:var(--ink);font-weight:500}
+    .divider{height:0.5px;background:var(--border);max-width:1080px;margin:0 auto}
+    .section-label{font-size:11px;font-weight:500;letter-spacing:0.12em;text-transform:uppercase;color:var(--ink-3);margin-bottom:20px}
+    .section-title{font-family:'DM Serif Display',serif;font-size:clamp(30px,4vw,44px);margin-bottom:16px}
+    .about-layout{display:grid;grid-template-columns:1fr 1fr;gap:80px;margin-top:56px}
+    .attr-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden}
+    .attr-cell{background:var(--white);padding:24px 22px}
+    .attr-icon{font-size:20px;margin-bottom:10px}
+    .attr-title{font-size:14px;font-weight:500;margin-bottom:4px}
+    .attr-desc{font-size:13px;color:var(--ink-3)}
+    .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden;margin-top:56px}
+    .step{background:var(--paper);padding:36px 28px}
+    .step.dark{background:var(--ink)}
+    .step-num{font-family:'DM Serif Display',serif;font-size:13px;color:var(--ink-3);margin-bottom:16px}
+    .step.dark .step-num{color:rgba(255,255,255,0.35)}
+    .step-title{font-size:15px;font-weight:500;margin-bottom:10px}
+    .step.dark .step-title{color:var(--white)}
+    .step-body{font-size:13px;color:var(--ink-2)}
+    .step.dark .step-body{color:rgba(255,255,255,0.5)}
+    .access-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden;margin-top:24px}
+    .access-cell{background:var(--white);padding:40px 32px}
+    .access-cell.dark{background:var(--ink)}
+    .access-badge{display:inline-flex;font-size:10px;font-weight:500;letter-spacing:0.08em;text-transform:uppercase;padding:4px 12px;border-radius:100px;margin-bottom:20px}
+    .badge-free{background:rgba(31,122,77,0.09);color:var(--accent)}
+    .badge-contrib{background:rgba(255,255,255,0.12);color:rgba(255,255,255,0.6)}
+    .access-title{font-family:'DM Serif Display',serif;font-size:22px;margin-bottom:12px}
+    .access-cell .access-title{color:var(--ink)}
+    .access-cell.dark .access-title{color:var(--white)}
+    .access-body{font-size:14px}
+    .access-cell .access-body{color:var(--ink-2)}
+    .access-cell.dark .access-body{color:rgba(255,255,255,0.55)}
+    .cta-shell{padding:120px 32px}
+    .cta-inner{text-align:center;max-width:640px;margin:0 auto}
+    .cta-inner h2{font-family:'DM Serif Display',serif;font-size:clamp(32px,5vw,52px);margin-bottom:20px}
+    footer{border-top:0.5px solid var(--border);padding:40px 32px;display:flex;justify-content:space-between;max-width:1080px;margin:0 auto}
+    .footer-copy,.footer-loc{font-size:13px;color:var(--ink-3)}
+    .reveal{opacity:0;transform:translateY(22px);transition:opacity 0.65s ease,transform 0.65s ease}
+    .reveal.visible{opacity:1;transform:none}
+    .d1{transition-delay:0.08s}.d2{transition-delay:0.16s}.d3{transition-delay:0.24s}
+    @media(max-width:768px){nav{padding:0 20px}.nav-links,.nav-right{display:none}section{padding:80px 20px}.hero{padding-top:130px}.about-layout,.attr-grid,.steps-grid,.access-grid{grid-template-columns:1fr}}
   </style>
 </head>
 <body>
-
-  <div id="toolbar">
-    <strong>🌳 Honmoku Tree Map</strong>
-    <button id="btn-add">+ Add tree</button>
-    <button id="btn-undo">↩ Undo</button>
-    <button id="btn-export-geojson">⬇ Export GeoJSON</button>
-    <button id="btn-export-csv">⬇ Export CSV</button>
-  </div>
-
-  <div id="map"></div>
-
-  <div class="overlay" id="overlay"></div>
-  <div id="edit-form">
-    <h3>Edit tree</h3>
-    <label>Species (English)<input type="text" id="species-en"></label>
-    <label>Species (Japanese)<input type="text" id="species-jp"></label>
-    <label>Species (Latin)<input type="text" id="species-latin"></label>
-    
-    <label>Tree height (m)</label>
-    <div class="height-options">
-      <label><input type="radio" name="height" value="<5"> < 5 m</label>
-      <label><input type="radio" name="height" value="5-10"> 5 – 10 m</label>
-      <label><input type="radio" name="height" value="10-20"> 10 – 20 m</label>
-      <label><input type="radio" name="height" value=">20"> > 20 m</label>
+  <nav>
+    <a href="index.html" class="nav-brand"><div class="brand-icon">🌳</div><span class="brand-name">Honmoku <em>Trees</em></span></a>
+    <ul class="nav-links">
+      <li><a href="#about">The project</a></li>
+      <li><a href="#contribute">Contribute</a></li>
+      <li><a href="map.html">Map</a></li>
+    </ul>
+    <div class="nav-right">
+      <a href="login.html" class="btn-nav ghost" id="nav-login-btn">Sign in to contribute</a>
+      <a href="map.html" class="btn-nav">Open map →</a>
     </div>
+  </nav>
 
-    <label>Canopy area (m²)<input type="number" step="0.1" id="canopy"></label>
-    <label>Estimated age (years)<input type="number" id="age"></label>
-    <label>Notes<textarea id="notes" rows="2"></textarea></label>
-    <label>Photo URL<input type="url" id="photo-url"></label>
-    
-    <div class="btn-group">
-      <button id="btn-save">💾 Save</button>
-      <button id="btn-delete">🗑 Delete</button>
-      <button id="btn-cancel">✕ Cancel</button>
+  <section class="hero">
+    <p class="hero-kana reveal">本牧の木々</p>
+    <h1 class="reveal d1">Every tree in Honmoku,<br><em>mapped.</em></h1>
+    <p class="hero-sub reveal d2">A community record of the trees, species, and canopy of Honmoku neighbourhood in Yokohama.</p>
+    <div class="hero-actions reveal d3">
+      <a href="map.html" class="btn-primary">Explore the map</a>
+      <a href="login.html" class="btn-ghost">Sign in to contribute</a>
     </div>
-  </div>
+    <p class="hero-stat reveal d3" id="hero-stat">Loading…</p>
+  </section>
 
-  <!-- ✅ ES Module Script -->
-  <script type="module">
-    import maplibregl from 'https://esm.sh/maplibre-gl@4';
-    import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
+  <div class="divider"></div>
 
-    const SUPABASE_URL = 'https://xgnoqhikgvpltpbcgfwu.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_YsWANJ0xdGaHlg3gtjvhww_CXUowKri';
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  <section id="about">
+    <p class="section-label reveal">The project</p>
+    <div class="about-layout">
+      <div class="about-text">
+        <h2 class="section-title reveal">A living record of Honmoku's urban forest</h2>
+        <p class="reveal">Honmoku is a quiet coastal neighbourhood in Yokohama — once an international settlement, now a place where old gardens and street trees carry decades of history in their rings.</p>
+        <p class="reveal">This project documents those trees: species, height, canopy spread, and estimated age. Each entry is a small act of attention — a way of saying <em>this tree was here, and someone noticed.</em></p>
+      </div>
+      <div class="attr-grid reveal">
+        <div class="attr-cell"><div class="attr-icon">🌿</div><div class="attr-title">Species</div><div class="attr-desc">English, Japanese, and Latin names</div></div>
+        <div class="attr-cell"><div class="attr-icon">📏</div><div class="attr-title">Height</div><div class="attr-desc">Estimated trunk-to-crown height in metres</div></div>
+        <div class="attr-cell"><div class="attr-icon">🌳</div><div class="attr-title">Canopy</div><div class="attr-desc">Approximate canopy spread area in m²</div></div>
+        <div class="attr-cell"><div class="attr-icon">⏳</div><div class="attr-title">Age</div><div class="attr-desc">Estimated age in years where known</div></div>
+      </div>
+    </div>
+  </section>
 
-    // Initialize Map
-const map = new maplibregl.Map({
-  container: "map",
-  style: {
-    version: 8,
-    sources: {
-      satellite: {
-        type: "raster",
-        tiles: [
-          "https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg"
-        ],
-        tileSize: 256,
-        maxzoom: 18,
-        attribution: "国土地理院"
+  <div class="divider"></div>
+
+  <section id="contribute">
+    <p class="section-label reveal">How it works</p>
+    <h2 class="section-title reveal">Open to explore.<br>Reviewed before it's live.</h2>
+    <p class="section-intro reveal">Anyone can browse the map. Contributing data requires an approved account — and every submission is reviewed by the admin before it appears.</p>
+    <div class="steps-grid reveal">
+      <div class="step"><p class="step-num">01</p><p class="step-title">Explore the map</p><p class="step-body">Browse every documented tree in Honmoku. Click any pin to see species, height, canopy data, and notes. No account needed.</p></div>
+      <div class="step dark"><p class="step-num">02</p><p class="step-title">Get a contributor account</p><p class="step-body">Accounts are created manually by the project admin. Once approved, you receive credentials to sign in and contribute.</p></div>
+      <div class="step"><p class="step-num">03</p><p class="step-title">Submit a change</p><p class="step-body">Add a new tree, edit an existing entry, or flag one for removal. Your change is queued for admin review before going live.</p></div>
+    </div>
+    <div class="access-grid reveal">
+      <div class="access-cell"><span class="access-badge badge-free">Free · read-only</span><p class="access-title">Browse without an account</p><p class="access-body">The full map is open to everyone. View species names, heights, canopy areas, and field notes.</p><a href="map.html" class="btn-primary">Open the map →</a></div>
+      <div class="access-cell dark"><span class="access-badge badge-contrib">Contributor</span><p class="access-title">Add and edit tree data</p><p class="access-body">Approved contributors can add new trees, edit records, and flag removals. All changes go through review.</p><a href="login.html" class="btn-nav" style="background:var(--white);color:var(--ink);margin-top:24px">Sign in to contribute →</a></div>
+    </div>
+  </section>
+
+  <div class="divider"></div>
+
+  <section class="cta-shell">
+    <div class="cta-inner">
+      <h2 class="reveal">Start exploring</h2>
+      <p class="reveal">Hundreds of trees documented. More added every week. Zoom in, click around, and learn the trees of Honmoku.</p>
+      <a href="map.html" class="btn-primary reveal">Open the map →</a>
+    </div>
+  </section>
+
+  <footer>
+    <p class="footer-copy">© 2026 Honmoku Trees</p>
+    <p class="footer-loc">本牧 · Yokohama, Japan</p>
+  </footer>
+
+  <script>
+    const { createClient } = window.supabase;
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    // Update login button if signed in
+    sb.auth.getSession().then(({ data: { session } }) => {
+      if (session) {
+        const btns = document.querySelectorAll('#nav-login-btn');
+        btns.forEach(b => { b.textContent = 'Open map'; b.href = 'map.html'; });
       }
-    },
-    layers: [{ id: "satellite", type: "raster", source: "satellite" }]
-  },
-  center: [139.6585, 35.4230],
-  zoom: 15,
-  maxZoom: 21,
-});
-
-map.addControl(new maplibregl.NavigationControl(), "top-right");
-map.addControl(new maplibregl.ScaleControl(), "bottom-right");
-
-
-    // UI State
-    const form = document.getElementById('edit-form');
-    const overlay = document.getElementById('overlay');
-    let currentTreeId = null;
-    let undoStack = [];
-
-    // 🔹 Setup layers & clustering after map loads
-    map.on('load', () => {
-      map.addSource('trees', {
-        type: 'geojson',
-        data: { type: 'FeatureCollection', features: [] },
-        cluster: true,
-        clusterMaxZoom: 14,
-        clusterRadius: 50
-      });
-
-      // Cluster circles
-      map.addLayer({
-        id: 'tree-clusters',
-        type: 'circle',
-        source: 'trees',
-        filter: ['has', 'point_count'],
-        paint: {
-          'circle-color': '#3b82f6',
-          'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40]
-        }
-      });
-
-      // Unclustered points
-      map.addLayer({
-        id: 'tree-points',
-        type: 'circle',
-        source: 'trees',
-        filter: ['!', ['has', 'point_count']],
-        paint: { 'circle-radius': 7, 'circle-color': '#22c55e' }
-      });
-
-      // Cursors
-      map.on('mouseenter', 'tree-clusters', () => map.getCanvas().style.cursor = 'pointer');
-      map.on('mouseleave', 'tree-clusters', () => map.getCanvas().style.cursor = 'grab');
-      map.on('mouseenter', 'tree-points', () => map.getCanvas().style.cursor = 'pointer');
-      map.on('mouseleave', 'tree-points', () => map.getCanvas().style.cursor = 'grab');
-
-      // Cluster click -> zoom in
-      map.on('click', 'tree-clusters', (e) => {
-        const features = map.queryRenderedFeatures(e.point, { layers: ['tree-clusters'] });
-        const clusterId = features[0].properties.cluster_id;
-        map.getSource('trees').getClusterExpansionZoom(clusterId, (err, zoom) => {
-          if (!err) map.easeTo({ center: features[0].geometry.coordinates, zoom });
-        });
-      });
-
-      // Point click -> open edit form
-      map.on('click', 'tree-points', (e) => {
-        const props = e.features[0].properties;
-        openEditForm(props.id);
-      });
-
-      loadTrees();
     });
 
-    // 🔹 UI Handlers
-    document.getElementById('btn-add').addEventListener('click', () => {
-      currentTreeId = null;
-      clearForm();
-      openForm();
-    });
-
-    document.getElementById('btn-cancel').addEventListener('click', closeForm);
-    overlay.addEventListener('click', closeForm);
-
-    document.getElementById('btn-undo').addEventListener('click', () => {
-      if (undoStack.length === 0) return alert('Nothing to undo');
-      const action = undoStack.pop();
-      console.log('Undo requested:', action);
-      alert(`Undo triggered for: ${action.type}. (For production: implement soft-deletes or DB transactions)`);
-    });
-
-    function openForm() {
-      form.style.display = 'block';
-      overlay.style.display = 'block';
-    }
-    function closeForm() {
-      form.style.display = 'none';
-      overlay.style.display = 'none';
-      currentTreeId = null;
-    }
-    function clearForm() {
-      form.querySelectorAll('input, textarea').forEach(el => el.value = '');
-      form.querySelectorAll('input[name="height"]').forEach(el => el.checked = false);
-    }
-
-    async function openEditForm(id) {
-      currentTreeId = id;
-      const { data, error } = await supabase.from('trees').select('*').eq('id', id).single();
-      if (error || !data) return alert('Failed to load tree data');
-
-      document.getElementById('species-en').value = data.species_en || '';
-      document.getElementById('species-jp').value = data.species_jp || '';
-      document.getElementById('species-latin').value = data.species_latin || '';
-      document.getElementById('canopy').value = data.canopy_area ?? '';
-      document.getElementById('age').value = data.age ?? '';
-      document.getElementById('notes').value = data.notes || '';
-      document.getElementById('photo-url').value = data.photo_url || '';
-      
-      const hr = document.querySelector(`input[name="height"][value="${data.height_range}"]`);
-      if (hr) hr.checked = true;
-      openForm();
-    }
-
-    // 🔹 Save / Delete
-    document.getElementById('btn-save').addEventListener('click', async () => {
-      const payload = {
-        species_en: document.getElementById('species-en').value,
-        species_jp: document.getElementById('species-jp').value,
-        species_latin: document.getElementById('species-latin').value,
-        height_range: document.querySelector('input[name="height"]:checked')?.value || null,
-        canopy_area: document.getElementById('canopy').value ? parseFloat(document.getElementById('canopy').value) : null,
-        age: document.getElementById('age').value ? parseInt(document.getElementById('age').value) : null,
-        notes: document.getElementById('notes').value,
-        photo_url: document.getElementById('photo-url').value
-      };
-
+    // Tree count stat
+    async function loadStat() {
+      const el = document.getElementById('hero-stat');
       try {
-        if (currentTreeId) {
-          await supabase.from('trees').update(payload).eq('id', currentTreeId);
-          undoStack.push({ type: 'update', id: currentTreeId });
-        } else {
-          const center = map.getCenter();
-          payload.latitude = center.lat;
-          payload.longitude = center.lng;
-          await supabase.from('trees').insert([payload]);
-          undoStack.push({ type: 'insert' });
+        let n = 0;
+        if (SUPABASE_URL && !SUPABASE_URL.includes('YOUR_PROJECT')) {
+          const { count } = await sb.from('trees').select('*', { count: 'exact', head: true });
+          n = count || 0;
         }
-        closeForm();
-        await loadTrees();
-      } catch (err) {
-        console.error('Save failed:', err);
-        alert('Failed to save. Check console.');
-      }
-    });
-
-    document.getElementById('btn-delete').addEventListener('click', async () => {
-      if (!currentTreeId) return alert('No tree selected');
-      if (!confirm('Permanently delete this tree?')) return;
-      try {
-        await supabase.from('trees').delete().eq('id', currentTreeId);
-        undoStack.push({ type: 'delete', id: currentTreeId });
-        closeForm();
-        await loadTrees();
-      } catch (err) {
-        console.error('Delete failed:', err);
-        alert('Failed to delete.');
-      }
-    });
-
-    // 🔹 Data Loading
-    async function loadTrees() {
-      try {
-        const { data, error } = await supabase.from('trees').select('*');
-        if (error) throw error;
-
-        const geojson = {
-          type: 'FeatureCollection',
-          features: (data || []).filter(t => t.latitude && t.longitude).map(t => ({
-            type: 'Feature',
-            geometry: { type: 'Point', coordinates: [t.longitude, t.latitude] },
-            properties: t
-          }))
-        };
-
-        // Efficiently update WebGL source without recreating layers
-        if (map.getSource('trees')) {
-          map.getSource('trees').setData(geojson);
-        }
-      } catch (err) {
-        console.error('Load failed:', err);
-      }
+        el.innerHTML = `<b>${n.toLocaleString()}</b> trees documented across Honmoku`;
+      } catch (_) { el.textContent = ''; }
     }
+    loadStat();
 
-    // 🔹 Exports
-    document.getElementById('btn-export-geojson').addEventListener('click', async () => {
-      const { data } = await supabase.from('trees').select('*');
-      if (!data?.length) return alert('No trees to export');
-      const geojson = {
-        type: 'FeatureCollection',
-        features: data.filter(t => t.latitude && t.longitude).map(t => ({
-          type: 'Feature',
-          geometry: { type: 'Point', coordinates: [t.longitude, t.latitude] },
-          properties: t
-        }))
-      };
-      downloadFile(JSON.stringify(geojson, null, 2), 'honmoku-trees.geojson', 'application/json');
-    });
-
-    document.getElementById('btn-export-csv').addEventListener('click', async () => {
-      const { data } = await supabase.from('trees').select('*');
-      if (!data?.length) return alert('No trees to export');
-      const headers = Object.keys(data[0]);
-      const rows = data.map(row => headers.map(h => `"${(row[h] ?? '').toString().replace(/"/g, '""')}"`).join(','));
-      downloadFile([headers.join(','), ...rows].join('\n'), 'honmoku-trees.csv', 'text/csv');
-    });
-
-    function downloadFile(content, filename, type) {
-      const blob = new Blob([content], { type });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = filename;
-      document.body.appendChild(a); a.click(); a.remove();
-      URL.revokeObjectURL(url);
+    // Scroll reveal
+    const revEls = document.querySelectorAll('.reveal');
+    if ('IntersectionObserver' in window) {
+      const obs = new IntersectionObserver(entries => {
+        entries.forEach(e => { if (e.isIntersecting) { e.target.classList.add('visible'); obs.unobserve(e.target); } });
+      }, { threshold: 0.1 });
+      revEls.forEach(el => obs.observe(el));
+    } else {
+      revEls.forEach(el => el.classList.add('visible'));
     }
   </script>
 </body>
