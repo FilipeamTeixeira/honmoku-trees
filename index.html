@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Honmoku Trees — Community tree map of Honmoku, Yokohama</title>
+  <title>mokumap — Community tree map of Honmoku, Yokohama</title>
   <meta name="description" content="A community project documenting the trees, species, and canopy of Honmoku neighbourhood in Yokohama, Japan." />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -14,6 +14,8 @@
     :root { --paper:#F7F6F3; --white:#FFFFFF; --ink:#1A1A1A; --ink-2:#555555; --ink-3:#999999; --accent:#1F7A4D; --border:rgba(26,26,26,0.10); --r:16px; }
     *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
     body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--paper);color:var(--ink);font-size:17px;line-height:1.7}
+    /* Fix: form controls don't inherit font by default */
+    input,textarea,button,select{font-family:inherit}
     nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(247,246,243,0.90);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--border)}
     .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
     .brand-icon{width:30px;height:30px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
@@ -80,7 +82,10 @@
 </head>
 <body>
   <nav>
-    <a href="index.html" class="nav-brand"><div class="brand-icon">🌳</div><span class="brand-name">Honmoku <em>Trees</em></span></a>
+    <a href="index.html" class="nav-brand">
+      <div class="brand-icon">🌳</div>
+      <span class="brand-name">moku<em>map</em></span>
+    </a>
     <ul class="nav-links">
       <li><a href="#about">The project</a></li>
       <li><a href="#contribute">Contribute</a></li>
@@ -134,7 +139,7 @@
       <div class="step"><p class="step-num">03</p><p class="step-title">Submit a change</p><p class="step-body">Add a new tree, edit an existing entry, or flag one for removal. Your change is queued for admin review before going live.</p></div>
     </div>
     <div class="access-grid reveal">
-      <div class="access-cell"><span class="access-badge badge-free">Free · read-only</span><p class="access-title">Browse without an account</p><p class="access-body">The full map is open to everyone. View species names, heights, canopy areas, and field notes.</p><a href="map.html" class="btn-primary">Open the map →</a></div>
+      <div class="access-cell"><span class="access-badge badge-free">Free · read-only</span><p class="access-title">Browse without an account</p><p class="access-body">The full map is open to everyone. View species names, heights, canopy areas, and field notes.</p><a href="map.html" class="btn-primary" style="margin-top:24px;display:inline-flex">Open the map →</a></div>
       <div class="access-cell dark"><span class="access-badge badge-contrib">Contributor</span><p class="access-title">Add and edit tree data</p><p class="access-body">Approved contributors can add new trees, edit records, and flag removals. All changes go through review.</p><a href="login.html" class="btn-nav" style="background:var(--white);color:var(--ink);margin-top:24px">Sign in to contribute →</a></div>
     </div>
   </section>
@@ -145,12 +150,12 @@
     <div class="cta-inner">
       <h2 class="reveal">Start exploring</h2>
       <p class="reveal">Hundreds of trees documented. More added every week. Zoom in, click around, and learn the trees of Honmoku.</p>
-      <a href="map.html" class="btn-primary reveal">Open the map →</a>
+      <a href="map.html" class="btn-primary reveal" style="margin-top:32px;display:inline-flex">Open the map →</a>
     </div>
   </section>
 
   <footer>
-    <p class="footer-copy">© 2026 Honmoku Trees</p>
+    <p class="footer-copy">© 2026 mokumap</p>
     <p class="footer-loc">本牧 · Yokohama, Japan</p>
   </footer>
 
@@ -158,11 +163,11 @@
     const { createClient } = window.supabase;
     const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-    // Update login button if signed in
+    // Update login button if already signed in
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
-        const btns = document.querySelectorAll('#nav-login-btn');
-        btns.forEach(b => { b.textContent = 'Open map'; b.href = 'map.html'; });
+        const btn = document.getElementById('nav-login-btn');
+        if (btn) { btn.textContent = 'Open map'; btn.href = 'map.html'; }
       }
     });
 

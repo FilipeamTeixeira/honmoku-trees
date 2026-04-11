@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Sign in — Honmoku Trees</title>
+  <title>Sign in — mokumap</title>
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans&display=swap" rel="stylesheet" />
@@ -12,6 +12,8 @@
   <style>
     :root { --paper:#F7F6F3; --white:#FFFFFF; --ink:#1A1A1A; --ink-2:#555555; --accent:#1F7A4D; --border:rgba(26,26,26,0.10); --r:16px; }
     *{box-sizing:border-box;margin:0;padding:0}
+    /* Fix: form controls don't inherit font by default */
+    input,textarea,button,select{font-family:inherit}
     body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--paper);color:var(--ink);display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
     .card{background:var(--white);padding:32px;border-radius:var(--r);box-shadow:0 4px 20px rgba(0,0,0,0.08);max-width:400px;width:90%}
     h1{font-family:'DM Serif Display',serif;margin:0 0 8px;font-size:24px;color:var(--ink)}
@@ -30,42 +32,43 @@
   <div class="card">
     <h1>Sign in to contribute</h1>
     <p>Enter your credentials to access the tree editor. Accounts are created manually by the project admin.</p>
-    
+
     <form id="login-form">
       <label for="email">Email</label>
       <input type="email" id="email" placeholder="you@example.com" required autocomplete="email">
-      
+
       <label for="password">Password</label>
       <input type="password" id="password" placeholder="••••••••" required autocomplete="current-password">
-      
+
       <p class="error" id="error-msg"></p>
-      
+
       <button type="submit">Sign in</button>
     </form>
-    
-    <a href="index.html" class="back">← Back to Honmoku Trees</a>
+
+    <a href="index.html" class="back">← Back to mokumap</a>
   </div>
 
   <script>
+    // ✅ Use window.supabase from UMD build, but assign to different variable name
     const { createClient } = window.supabase;
-    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    
+    const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
     document.getElementById('login-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const email = document.getElementById('email').value;
       const password = document.getElementById('password').value;
       const errorEl = document.getElementById('error-msg');
-      
+
       errorEl.style.display = 'none';
       errorEl.textContent = '';
-      
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
-      
+
+      // ✅ Use 'sb' instead of 'supabase'
+      const { error } = await sb.auth.signInWithPassword({ email, password });
+
       if (error) {
         errorEl.textContent = error.message;
         errorEl.style.display = 'block';
       } else {
-        // Redirect to map on success
         window.location.href = 'map.html';
       }
     });

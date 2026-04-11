@@ -3,18 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Honmoku Trees — Map Editor</title>
-  
-  <!-- Fonts & Supabase -->
+  <title>mokumap — Map</title>
+
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="https://esm.sh/maplibre-gl@4/dist/maplibre-gl.css" />
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.min.js"></script>
   <script src="config.js"></script>
-  
+
   <style>
-    /* ── Design tokens from welcome page ───────────────── */
     :root {
       --paper:  #F7F6F3;
       --white:  #FFFFFF;
@@ -30,6 +28,8 @@
       --shadow-lg: 0 10px 15px -3px rgb(0 0 0 / 0.1), 0 4px 6px -4px rgb(0 0 0 / 0.1);
     }
     *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    /* Fix: form controls don't inherit font by default */
+    input, textarea, button, select { font-family: inherit; }
     body {
       font-family: 'DM Sans', -apple-system, sans-serif;
       background: var(--paper);
@@ -42,9 +42,9 @@
       height: 100vh;
     }
 
-    /* ── Nav (matches welcome page) ───────────────────── */
+    /* ── Nav ───────────────────────────────────────── */
     nav {
-      position: sticky; top: 0; left: 0; right: 0; z-index: 100;
+      position: sticky; top: 0; z-index: 100;
       height: 60px;
       display: flex; align-items: center; justify-content: space-between;
       padding: 0 24px;
@@ -62,8 +62,8 @@
     .nav-links { display: flex; align-items: center; gap: 24px; list-style: none; }
     .nav-links a { font-size: 14px; color: var(--ink-2); text-decoration: none; transition: color 0.2s; }
     .nav-links a:hover { color: var(--ink); }
-    
-    .nav-right { display: flex; align-items: center; gap: 12px; }
+
+    .nav-right { display: flex; align-items: center; gap: 8px; margin-left: auto; }
     .btn-nav {
       display: inline-flex; align-items: center; gap: 6px;
       font-size: 14px; font-weight: 500;
@@ -80,10 +80,10 @@
       border: 0.5px solid var(--border);
     }
     .btn-nav.ghost:hover { background: var(--white); color: var(--ink); opacity: 1; }
-    .btn-nav.danger { background: #fef2f2; color: #dc2626; border-color: #fecaca; }
-    .btn-nav.danger:hover { background: #fee2e2; }
+    .btn-nav.danger { background: #fef2f2; color: #dc2626; border: 0.5px solid #fecaca; }
+    .btn-nav.danger:hover { background: #fee2e2; opacity: 1; }
     .btn-nav:disabled { opacity: 0.5; cursor: not-allowed; transform: none !important; }
-    
+
     .user-pill {
       display: inline-flex; align-items: center; gap: 8px;
       padding: 6px 14px;
@@ -92,11 +92,11 @@
     }
     .user-pill i { color: var(--accent); }
 
-    /* ── Main layout ─────────────────────────────────── */
+    /* ── Main layout ─────────────────────────────── */
     #main { display: flex; flex: 1; overflow: hidden; }
-    #map { flex: 1; height: calc(100vh - 60px); position: relative; background: #e8e6e1; }
-    
-    /* ── Side Panel (unified design) ────────────────── */
+    #map { flex: 1; height: calc(100vh - 60px); background: #e8e6e1; }
+
+    /* ── Side Panel ──────────────────────────────── */
     #side-panel {
       width: 420px; max-width: 45vw; background: var(--white); border-left: 0.5px solid var(--border);
       padding: 24px; overflow-y: auto; display: none; flex-direction: column;
@@ -105,13 +105,13 @@
     }
     @keyframes slideIn { from { transform: translateX(20px); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
     #side-panel.visible { display: flex; }
-    
+
     #side-panel h3 {
       font-family: 'DM Serif Display', serif;
       font-size: 18px; margin-bottom: 16px; color: var(--ink);
       display: flex; align-items: center; gap: 8px;
     }
-    
+
     /* Auth notice */
     #auth-notice {
       background: linear-gradient(135deg, #f0fdf4, #dcfce7);
@@ -121,7 +121,7 @@
     }
     #auth-notice.visible { display: block; }
     #auth-notice .btn-nav { margin-top: 8px; padding: 6px 14px; font-size: 13px; }
-    
+
     /* Pending panel */
     #pending-panel {
       background: linear-gradient(135deg, #fffbeb, #fef3c7);
@@ -147,7 +147,7 @@
       transition: background 0.15s;
     }
     #pending-panel .pending-list small:hover { background: #fde68a; }
-    
+
     /* Form */
     #edit-form { display: flex; flex-direction: column; gap: 2px; }
     #side-panel label {
@@ -163,7 +163,7 @@
       box-shadow: 0 0 0 3px rgba(31,122,77,0.1);
     }
     #side-panel textarea { resize: vertical; min-height: 70px; }
-    
+
     /* Height options */
     #side-panel .height-options { display: flex; gap: 8px; margin-top: 8px; flex-wrap: wrap; }
     #side-panel .height-options label {
@@ -178,7 +178,7 @@
     #side-panel .height-options label:has(input:checked) {
       background: var(--accent); color: white; border-color: var(--accent);
     }
-    
+
     /* Button groups */
     .btn-group { display: flex; gap: 10px; margin-top: 18px; flex-wrap: wrap; }
     .btn-group button {
@@ -194,13 +194,13 @@
     .btn-group button.primary:hover { opacity: 0.9; }
     .btn-group button.danger { background: #fef2f2; border-color: #fecaca; color: #dc2626; }
     .btn-group button.danger:hover { background: #fee2e2; }
-    
+
     /* Empty state */
     #panel-empty {
       text-align: center; color: var(--ink-3); padding: 40px 20px; line-height: 1.7;
     }
     #panel-empty i { font-size: 28px; color: #cbd5e1; margin-bottom: 12px; display: block; }
-    
+
     /* Markers */
     .marker-pending {
       width: 20px; height: 20px; border-radius: 50%;
@@ -219,13 +219,13 @@
       0%, 100% { box-shadow: 0 2px 6px rgba(239,68,68,0.4); }
       50% { box-shadow: 0 2px 12px rgba(239,68,68,0.7); }
     }
-    
+
     /* Map cursors */
     .maplibregl-canvas-container { cursor: grab; }
     .maplibregl-canvas-container:active { cursor: grabbing; }
     .maplibregl-canvas-container.mode-add,
     .maplibregl-canvas-container.mode-delete { cursor: crosshair; }
-    
+
     /* Toast */
     #toast-container {
       position: fixed; bottom: 20px; right: 20px; z-index: 1000;
@@ -243,51 +243,41 @@
     .toast.error { border-left-color: #dc2626; }
     .toast.warning { border-left-color: #ca8a04; }
     @keyframes fadeOut { to { opacity: 0; transform: translateX(20px); } }
-    
+
+    /* Read-only field styling */
+    #edit-form input:disabled,
+    #edit-form textarea:disabled {
+      background: var(--paper);
+      color: var(--ink-2);
+      cursor: default;
+      border-color: var(--border-2);
+    }
+
     /* Responsive */
     @media (max-width: 900px) {
       #main { flex-direction: column; }
-      #side-panel {
-        width: 100%; max-width: none; border-left: none; border-top: 0.5px solid var(--border);
-        max-height: 50vh;
-      }
+      #side-panel { width: 100%; max-width: none; border-left: none; border-top: 0.5px solid var(--border); max-height: 50vh; }
       #map { height: 50vh; }
       nav { padding: 0 16px; }
       .nav-links { display: none; }
     }
-
-    /* Read-only field styling */
-#edit-form input:disabled,
-#edit-form textarea:disabled {
-  background: var(--paper);
-  color: var(--ink-2);
-  cursor: default;
-  border-color: var(--border-2);
-}
-#edit-form input:disabled::placeholder,
-#edit-form textarea:disabled::placeholder {
-  color: var(--ink-3);
-}
-
   </style>
 </head>
 <body>
 
-  <!-- Nav (matches welcome page) -->
   <nav>
-    <a href="index.html" class="nav-brand">Honmoku <em>Trees</em></a>
+    <a href="index.html" class="nav-brand">moku<em>map</em></a>
     <ul class="nav-links">
       <li><a href="index.html#about">The project</a></li>
       <li><a href="index.html#contribute">Contribute</a></li>
       <li><a href="map.html" style="color:var(--ink);font-weight:500">Map</a></li>
     </ul>
-    <div style="display:flex;gap:8px;margin-left:auto">
-  <button id="btn-add-mode" class="btn-nav ghost" disabled><i class="fas fa-plus"></i> Add</button>
-  <button id="btn-delete-mode" class="btn-nav ghost danger" disabled><i class="fas fa-trash"></i> Remove</button>
-</div>
+    <!-- All controls in one unified nav-right -->
     <div class="nav-right">
+      <button id="btn-add-mode" class="btn-nav ghost" disabled>+ Add</button>
+      <button id="btn-delete-mode" class="btn-nav ghost danger" disabled>✕ Remove</button>
       <span id="user-display" class="user-pill" style="display:none">
-        <i class="fas fa-user"></i><span id="user-name"></span>
+        <i>●</i><span id="user-name"></span>
       </span>
       <button id="auth-btn" class="btn-nav ghost">Sign in</button>
       <a href="index.html" class="btn-nav">← Back</a>
@@ -296,17 +286,17 @@
 
   <div id="main">
     <div id="map"></div>
-    
+
     <div id="side-panel">
-      <h3><span id="panel-title">Edit Tree</span></h3>
-      
-      <!-- Auth notice (shown when not logged in) -->
+      <h3><span id="panel-title">Tree Details</span></h3>
+
+      <!-- Auth notice (shown when not logged in, panel open) -->
       <div id="auth-notice">
         <strong>🔐 Sign in to contribute</strong><br>
         Adding or editing trees requires an approved account.
         <button id="login-from-panel" class="btn-nav" style="margin-top:8px">Sign in</button>
       </div>
-      
+
       <!-- Pending operations panel -->
       <div id="pending-panel">
         <h4><span id="pending-title">Pending Additions (0)</span></h4>
@@ -316,14 +306,14 @@
           <button id="btn-cancel-pending">✕ Cancel</button>
         </div>
       </div>
-      
-      <!-- Edit form -->
+
+      <!-- Edit / view form -->
       <form id="edit-form">
         <input type="hidden" id="tree-id">
         <label>Species (English)<input type="text" id="species-en" placeholder="e.g., Japanese Maple"></label>
         <label>Species (Japanese)<input type="text" id="species-jp" placeholder="例: イロハモミジ"></label>
         <label>Species (Latin)<input type="text" id="species-latin" placeholder="e.g., Acer palmatum"></label>
-        
+
         <label>Tree height (m)</label>
         <div class="height-options">
           <label><input type="radio" name="height" value="<5"><span>&lt; 5 m</span></label>
@@ -331,53 +321,53 @@
           <label><input type="radio" name="height" value="10-20"><span>10 – 20 m</span></label>
           <label><input type="radio" name="height" value=">20"><span>&gt; 20 m</span></label>
         </div>
-        
+
         <label>Canopy area (m²)<input type="number" step="0.1" id="canopy" placeholder="e.g., 12.5"></label>
         <label>Estimated age (years)<input type="number" id="age_years" placeholder="e.g., 45"></label>
         <label>Notes<textarea id="notes" placeholder="Additional observations..."></textarea></label>
         <label>Photo URL<input type="url" id="photo-url" placeholder="https://..."></label>
-        
+
         <div class="btn-group">
           <button type="button" id="btn-save" class="primary">💾 Save</button>
           <button type="button" id="btn-delete" class="danger">🗑 Delete</button>
           <button type="button" id="btn-cancel">✕ Close</button>
         </div>
       </form>
-      
+
       <!-- Empty state -->
       <div id="panel-empty">
         <i>🌳</i>
-        <p>Click a tree to edit its details,<br>or use <strong>Add/Remove modes</strong> above.</p>
+        <p>Click a tree to view its details,<br>or use <strong>Add / Remove</strong> above.</p>
       </div>
     </div>
   </div>
-  
+
   <div id="toast-container"></div>
 
   <script type="module">
     import maplibregl from 'https://esm.sh/maplibre-gl@4';
-    
+
     const { createClient } = window.supabase;
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
     // ── Map setup ─────────────────────────────────────
     const map = new maplibregl.Map({
-      container: "map",
+      container: 'map',
       style: {
         version: 8,
         sources: {
           satellite: {
-            type: "raster",
-            tiles: ["https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg"],
-            tileSize: 256, maxzoom: 18, attribution: "国土地理院"
+            type: 'raster',
+            tiles: ['https://cyberjapandata.gsi.go.jp/xyz/seamlessphoto/{z}/{x}/{y}.jpg'],
+            tileSize: 256, maxzoom: 18
           }
         },
-        layers: [{ id: "satellite", type: "raster", source: "satellite" }]
+        layers: [{ id: 'satellite', type: 'raster', source: 'satellite' }]
       },
       center: [139.6585, 35.4230], zoom: 15, maxZoom: 21,
     });
-    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), "top-right");
-    map.addControl(new maplibregl.ScaleControl({ maxWidth: 100 }), "bottom-right");
+    map.addControl(new maplibregl.NavigationControl({ showCompass: false }), 'top-right');
+    map.addControl(new maplibregl.ScaleControl({ maxWidth: 100 }), 'bottom-right');
 
     // ── State ─────────────────────────────────────────
     const state = {
@@ -407,104 +397,87 @@
     function showToast(msg, type = 'info', dur = 5000) {
       const toast = document.createElement('div');
       toast.className = `toast ${type}`;
-      const icons = { info:'ℹ️', success:'✅', error:'❌', warning:'⚠️' };
+      const icons = { info: 'ℹ️', success: '✅', error: '❌', warning: '⚠️' };
       toast.innerHTML = `<span>${icons[type]}</span><span>${msg}</span>`;
       els.toastContainer.appendChild(toast);
       setTimeout(() => toast.remove(), dur);
     }
 
-    // ── Auth handling ────────────────────────────────
+    // ── Auth ──────────────────────────────────────────
     async function initAuth() {
       const { data: { session } } = await supabase.auth.getSession();
       state.session = session;
       updateAuthUI();
-      
+
       supabase.auth.onAuthStateChange(async (event, sess) => {
         state.session = sess;
         updateAuthUI();
         if (event === 'SIGNED_IN') showToast('✓ Signed in', 'success');
-        if (event === 'SIGNED_OUT') {
-          showToast('Signed out', 'info');
-          exitMode(); // exit edit modes on logout
-        }
+        if (event === 'SIGNED_OUT') { showToast('Signed out', 'info'); exitMode(); }
       });
     }
-    
-function updateAuthUI() {
-  const loggedIn = !!state.session;
-  els.authBtn.textContent = loggedIn ? 'Sign out' : 'Sign in';
-  els.authBtn.className = `btn-nav ${loggedIn ? 'ghost' : ''}`;
-  
-  if (loggedIn && state.session.user?.user_metadata?.full_name) {
-    els.userName.textContent = state.session.user.user_metadata.full_name;
-    els.userDisplay.style.display = 'inline-flex';
-  } else {
-    els.userDisplay.style.display = 'none';
-  }
-  
-  // Show/hide auth notice in panel (only when panel is visible AND no tree selected)
-  if (els.panel.classList.contains('visible') && !state.currentTreeId) {
-    els.authNotice.classList.toggle('visible', !loggedIn);
-  }
-  
-  // ✅ NEW: If a tree is open, update form edit mode
-  if (state.currentTreeId) {
-    updateFormEditMode();
-  }
-  
-  // Disable mode buttons if not logged in
-  const canEdit = loggedIn;
-  ['btn-add-mode', 'btn-delete-mode'].forEach(id => {
-    const btn = document.getElementById(id);
-    if (btn) btn.disabled = !canEdit;
-  });
-}
-    
-async function toggleAuth() {
-  if (state.session) {
-    // Sign out
-    await supabase.auth.signOut();
-  } else {
-    // Redirect to login page for sign in
-    window.location.href = 'login.html';
-  }
-}
-    
-els.authBtn.addEventListener('click', () => {
-  if (state.session) {
-    supabase.auth.signOut(); // Sign out inline
-  } else {
-    window.location.href = 'login.html'; // Go to login page
-  }
-});
+
+    function updateAuthUI() {
+      const loggedIn = !!state.session;
+      els.authBtn.textContent = loggedIn ? 'Sign out' : 'Sign in';
+      els.authBtn.className = `btn-nav ${loggedIn ? 'ghost' : ''}`;
+
+      const name = state.session?.user?.user_metadata?.full_name;
+      if (loggedIn && name) {
+        els.userName.textContent = name;
+        els.userDisplay.style.display = 'inline-flex';
+      } else {
+        els.userDisplay.style.display = 'none';
+      }
+
+      // Show auth notice in panel only when no tree is selected
+      if (els.panel.classList.contains('visible') && !state.currentTreeId) {
+        els.authNotice.classList.toggle('visible', !loggedIn);
+      }
+
+      if (state.currentTreeId) updateFormEditMode();
+
+      ['btn-add-mode', 'btn-delete-mode'].forEach(id => {
+        const btn = document.getElementById(id);
+        if (btn) btn.disabled = !loggedIn;
+      });
+    }
+
+    // Single handler for auth button — no duplication
+    function toggleAuth() {
+      if (state.session) {
+        supabase.auth.signOut();
+      } else {
+        window.location.href = 'login.html';
+      }
+    }
+    els.authBtn.addEventListener('click', toggleAuth);
+    document.getElementById('login-from-panel').addEventListener('click', toggleAuth);
 
     // ── Map init ─────────────────────────────────────
     map.on('load', () => {
       els.mapCanvas = map.getCanvasContainer();
-      
+
       map.addSource('trees', {
-  type: 'geojson',
-  data: { 
-    type: 'FeatureCollection', 
-    features: []  // Will be populated by loadTrees()
-  },
-  cluster: true,
-  clusterMaxZoom: 14,
-  clusterRadius: 50
-});
-      
+        type: 'geojson',
+        data: { type: 'FeatureCollection', features: [] },
+        cluster: true,
+        clusterMaxZoom: 14,
+        clusterRadius: 50
+      });
+
       map.addLayer({
         id: 'tree-clusters', type: 'circle', source: 'trees',
         filter: ['has', 'point_count'],
         paint: { 'circle-color': '#3b82f6', 'circle-radius': ['step', ['get', 'point_count'], 20, 100, 30, 750, 40] }
       });
-      
+
       map.addLayer({
         id: 'tree-points', type: 'circle', source: 'trees',
         filter: ['!', ['has', 'point_count']],
         paint: { 'circle-radius': 7, 'circle-color': '#22c55e' }
       });
-      
+
       setupInteractions();
       loadTrees();
     });
@@ -514,7 +487,7 @@ els.authBtn.addEventListener('click', () => {
         map.on('mouseenter', layer, () => { if (!state.mode) map.getCanvas().style.cursor = 'pointer'; });
         map.on('mouseleave', layer, () => { if (!state.mode) map.getCanvas().style.cursor = 'grab'; });
       });
-      
+
       map.on('click', 'tree-clusters', e => {
         if (state.mode) return;
         const features = map.queryRenderedFeatures(e.point, { layers: ['tree-clusters'] });
@@ -523,26 +496,25 @@ els.authBtn.addEventListener('click', () => {
           if (!err) map.easeTo({ center: features[0].geometry.coordinates, zoom });
         });
       });
-      
+
+      // Single, unified click handler for tree points
       map.on('click', 'tree-points', e => {
         const id = e.features[0].properties.id;
-        if (state.mode === 'delete') { togglePendingDelete(id); return; }
+        if (state.mode === 'delete' && state.session) {
+          togglePendingDelete(id);
+          return;
+        }
         if (state.mode === 'add') return;
         openEditPanel(id);
       });
-      
-map.on('click', 'tree-points', e => {
-  const id = e.features[0].properties.id;
-  
-  // ✅ Always allow viewing, regardless of auth
-  openEditPanel(id);
-  
-  // Only allow delete-mode marking if logged in AND in delete mode
-  if (state.mode === 'delete' && state.session) {
-    togglePendingDelete(id);
-  }
-});
-      
+
+      // Add mode: click on empty map area
+      map.on('click', e => {
+        if (state.mode !== 'add' || !state.session) return;
+        const features = map.queryRenderedFeatures(e.point, { layers: ['tree-points', 'tree-clusters'] });
+        if (features.length === 0) addPendingTree(e.lngLat.lng, e.lngLat.lat);
+      });
+
       map.on('movestart', () => { if (state.mode) els.mapCanvas.classList.add(`mode-${state.mode}`); });
       map.on('moveend', () => { if (!state.mode) els.mapCanvas.classList.remove('mode-add', 'mode-delete'); });
     }
@@ -560,13 +532,11 @@ map.on('click', 'tree-points', e => {
     async function toggleMode(newMode) {
       if (state.mode === newMode) { await exitModeWithConfirmation(); return; }
       if (state.mode) { if (!await exitModeWithConfirmation()) return; }
-      
+
       state.mode = newMode;
-      const isAdd = newMode === 'add';
-      updateModeUI(isAdd ? 'Add Mode: Click map to place trees' : 'Remove Mode: Click trees to mark', isAdd ? 'pending' : 'danger');
       showPendingPanel(newMode);
       els.mapCanvas.classList.add(`mode-${newMode}`);
-      document.getElementById(isAdd ? 'btn-add-mode' : 'btn-delete-mode').classList.add('active');
+      document.getElementById(newMode === 'add' ? 'btn-add-mode' : 'btn-delete-mode').classList.add('active');
       if (newMode === 'delete') updateDeleteHighlights();
     }
 
@@ -576,11 +546,12 @@ map.on('click', 'tree-points', e => {
       if (hasAdds || hasDeletes) {
         const action = hasAdds ? 'add' : 'delete';
         const count = hasAdds ? state.pendingAdds.length : state.pendingDeletes.size;
-        const confirmed = confirm(`You have ${count} pending ${action} operation(s).\n\nSave to database?`);
-        if (confirmed) {
+        if (confirm(`You have ${count} pending ${action} operation(s).\n\nSave to database?`)) {
           if (hasAdds) await confirmPendingAdds();
           if (hasDeletes) await confirmPendingDeletes();
-        } else { discardPending(); }
+        } else {
+          discardPending();
+        }
       }
       exitMode();
       return true;
@@ -593,22 +564,12 @@ map.on('click', 'tree-points', e => {
     }
 
     function exitMode() {
-      state.mode = null; updateModeUI(); hidePendingPanel();
+      state.mode = null;
+      hidePendingPanel();
       els.mapCanvas.classList.remove('mode-add', 'mode-delete');
       document.getElementById('btn-add-mode')?.classList.remove('active');
       document.getElementById('btn-delete-mode')?.classList.remove('active');
       map.setPaintProperty('tree-points', 'circle-color', '#22c55e');
-      // ✅ FIX: Hide pending panel after exit
-      els.pendingPanel.classList.remove('visible');
-    }
-
-    function updateModeUI(text, type) {
-      const ind = document.getElementById('mode-indicator');
-      if (!ind) return;
-      if (text) {
-        ind.textContent = text; ind.style.display = 'block'; ind.className = '';
-        if (type) ind.classList.add(type);
-      } else { ind.style.display = 'none'; }
     }
 
     // ── Pending operations ───────────────────────────
@@ -646,9 +607,9 @@ map.on('click', 'tree-points', e => {
       const isAdd = state.mode === 'add';
       const items = isAdd ? state.pendingAdds : Array.from(state.pendingDeletes);
       els.pendingTitle.textContent = isAdd ? `Pending Additions (${items.length})` : `Pending Deletions (${items.length})`;
-      
+
       if (items.length === 0) {
-        els.pendingList.innerHTML = '<div style="color:#92400e;text-align:center">✓ Ready to confirm</div>';
+        els.pendingList.innerHTML = '<div style="color:#92400e;text-align:center">No items yet</div>';
       } else if (isAdd) {
         els.pendingList.innerHTML = items.map((p, i) =>
           `<div><span>#${i+1} ${p.lat.toFixed(4)}, ${p.lng.toFixed(4)}</span> <small data-id="${p.tempId}">✕</small></div>`
@@ -656,12 +617,13 @@ map.on('click', 'tree-points', e => {
         els.pendingList.querySelectorAll('small').forEach(el =>
           el.addEventListener('click', e => { e.stopPropagation(); removePendingTree(el.dataset.id); }));
       } else {
-        els.pendingList.innerHTML = items.map((id, i) => `<div><span>#${i+1} Tree ${id.toString().slice(0,6)}...</span></div>`).join('');
+        els.pendingList.innerHTML = items.map((id, i) =>
+          `<div><span>#${i+1} Tree ${id.toString().slice(0, 6)}…</span></div>`).join('');
       }
       document.getElementById('btn-confirm-pending').disabled = items.length === 0;
     }
 
-    function showPendingPanel(type) {
+    function showPendingPanel() {
       els.pendingPanel.classList.add('visible');
       els.editForm.style.display = 'none';
       els.panelEmpty.style.display = 'none';
@@ -690,126 +652,79 @@ map.on('click', 'tree-points', e => {
       if (state.pendingAdds.length === 0 || !state.session) return;
       const userId = state.session.user.id;
       const userName = state.session.user.user_metadata?.full_name || state.session.user.email?.split('@')[0] || 'Anonymous';
-      
+
       const treesToAdd = state.pendingAdds.map(p => ({
         latitude: p.lat, longitude: p.lng,
         species_en: '', species_jp: '', species_lat: '',
         height_m: null, canopy_m2: null, age_years: null, notes: '', photo_url: '',
-        editor_id: userId, editor_name: userName  // ✅ Store user attribution
+        editor_id: userId, editor_name: userName
       }));
-      
-      try {
-        const { error } = await supabase.from('trees').insert(treesToAdd);
-        if (error) throw error;
-        state.undoStack.push({ type: 'batch-insert', count: treesToAdd.length });
-        Object.values(state.tempMarkers).forEach(({ marker }) => marker.remove());
-        state.tempMarkers = {}; state.pendingAdds = [];
-        
-        // ✅ FIX: Hide panel & exit mode after success
-        hidePendingPanel(); exitMode();
-        await loadTrees();
-        showToast(`✓ Added ${treesToAdd.length} tree(s)`, 'success');
-      } catch (err) {
-        console.error('Batch add failed:', err);
-        showToast('Failed to add: ' + err.message, 'error', 8000);
-      }
+
+      const { error } = await supabase.from('trees').insert(treesToAdd);
+      if (error) { showToast('Failed to add: ' + error.message, 'error', 8000); return; }
+
+      state.undoStack.push({ type: 'batch-insert', count: treesToAdd.length });
+      Object.values(state.tempMarkers).forEach(({ marker }) => marker.remove());
+      state.tempMarkers = {}; state.pendingAdds = [];
+      hidePendingPanel(); exitMode();
+      await loadTrees();
+      showToast(`✓ Added ${treesToAdd.length} tree(s)`, 'success');
     }
 
     async function confirmPendingDeletes() {
       if (state.pendingDeletes.size === 0) return;
       const ids = Array.from(state.pendingDeletes);
-      try {
-        const { error } = await supabase.from('trees').delete().in('id', ids);
-        if (error) throw error;
-        state.undoStack.push({ type: 'batch-delete', ids });
-        state.pendingDeletes.clear();
-        
-        // ✅ FIX: Hide panel & exit mode after success
-        hidePendingPanel(); exitMode();
-        await loadTrees();
-        showToast(`✓ Deleted ${ids.length} tree(s)`, 'success');
-      } catch (err) {
-        console.error('Batch delete failed:', err);
-        showToast('Failed to delete: ' + err.message, 'error', 8000);
-      }
+
+      const { error } = await supabase.from('trees').delete().in('id', ids);
+      if (error) { showToast('Failed to delete: ' + error.message, 'error', 8000); return; }
+
+      state.undoStack.push({ type: 'batch-delete', ids });
+      state.pendingDeletes.clear();
+      hidePendingPanel(); exitMode();
+      await loadTrees();
+      showToast(`✓ Deleted ${ids.length} tree(s)`, 'success');
     }
 
     // ── Edit panel ───────────────────────────────────
-function openEditPanel(id) {
-  state.currentTreeId = id;
-  els.panelTitle.textContent = 'Tree Details';
-  els.panel.classList.add('visible');
-  els.panelEmpty.style.display = 'none';
-  els.pendingPanel.classList.remove('visible');
-  
-  // Always show the form for viewing
-  els.editForm.style.display = 'flex';
-  
-  // Hide auth notice when viewing (only show when trying to edit)
-  els.authNotice.classList.remove('visible');
-  
-  loadTreeData(id);
-  
-  // Update button states based on auth
-  updateFormEditMode();
-}
-
-function updateFormEditMode() {
-  const isEditing = !!state.session;
-  const inputs = els.editForm.querySelectorAll('input, textarea, select');
-  const saveBtn = document.getElementById('btn-save');
-  const deleteBtn = document.getElementById('btn-delete');
-  
-  if (isEditing) {
-    // Logged in: enable editing
-    inputs.forEach(el => el.disabled = false);
-    saveBtn.style.display = 'inline-flex';
-    deleteBtn.style.display = 'inline-flex';
-    els.panelTitle.innerHTML = '<i class="fas fa-edit"></i> Edit Tree';
-  } else {
-    // Not logged in: read-only mode
-    inputs.forEach(el => el.disabled = true);
-    saveBtn.style.display = 'none';
-    deleteBtn.style.display = 'none';
-    els.panelTitle.innerHTML = '<i class="fas fa-info-circle"></i> Tree Details';
-    
-    // Show subtle "sign in to edit" hint
-    if (!els.authNotice.querySelector('.edit-hint')) {
-      const hint = document.createElement('div');
-      hint.className = 'edit-hint';
-      hint.style.cssText = 'font-size:12px;color:var(--ink-3);margin-top:8px;text-align:center';
-      hint.innerHTML = '<i class="fas fa-lock" style="margin-right:4px"></i> <button id="hint-login" style="background:none;border:none;color:var(--accent);cursor:pointer;padding:0;font:inherit">Sign in</button> to edit this tree';
-      els.authNotice.appendChild(hint);
-      document.getElementById('hint-login')?.addEventListener('click', toggleAuth);
+    function openEditPanel(id) {
+      state.currentTreeId = id;
+      els.panel.classList.add('visible');
+      els.panelEmpty.style.display = 'none';
+      els.pendingPanel.classList.remove('visible');
+      els.editForm.style.display = 'flex';
+      els.authNotice.classList.remove('visible');
+      loadTreeData(id);
     }
-  }
-}
 
-async function loadTreeData(id) {
-  const { data, error } = await supabase.from('trees').select('*').eq('id', id).single();
-  if (error || !data) { 
-    showToast('Failed to load tree details', 'error'); 
-    closePanel(); 
-    return; 
-  }
-  
-  document.getElementById('tree-id').value = data.id;
-  document.getElementById('species-en').value = data.species_en || '—';
-  document.getElementById('species-jp').value = data.species_jp || '—';
-  document.getElementById('species-latin').value = data.species_lat || '—';
-  document.getElementById('canopy').value = data.canopy_m2 ?? '—';
-  document.getElementById('age_years').value = data.age_years ?? '—';
-  document.getElementById('notes').value = data.notes || '—';
-  document.getElementById('photo-url').value = data.photo_url || '—';
-  
-  // Set height radio
-  const hr = document.querySelector(`input[name="height"][value="${data.height_m}"]`);
-  document.querySelectorAll('input[name="height"]').forEach(el => el.checked = false);
-  if (hr) hr.checked = true;
-  
-  // ✅ Update form mode after loading data
-  updateFormEditMode();
-}
+    function updateFormEditMode() {
+      const isEditing = !!state.session;
+      els.editForm.querySelectorAll('input:not([type="hidden"]), textarea, select').forEach(el => el.disabled = !isEditing);
+      document.getElementById('btn-save').style.display = isEditing ? 'inline-flex' : 'none';
+      document.getElementById('btn-delete').style.display = isEditing ? 'inline-flex' : 'none';
+      els.panelTitle.textContent = isEditing ? 'Edit Tree' : 'Tree Details';
+    }
+
+    async function loadTreeData(id) {
+      const { data, error } = await supabase.from('trees').select('*').eq('id', id).single();
+      if (error || !data) { showToast('Failed to load tree details', 'error'); closePanel(); return; }
+
+      // Fix: use empty string for missing values, not '—'
+      // This prevents '—' from being written back to the DB on save
+      document.getElementById('tree-id').value = data.id;
+      document.getElementById('species-en').value = data.species_en || '';
+      document.getElementById('species-jp').value = data.species_jp || '';
+      document.getElementById('species-latin').value = data.species_lat || '';
+      document.getElementById('canopy').value = data.canopy_m2 ?? '';
+      document.getElementById('age_years').value = data.age_years ?? '';
+      document.getElementById('notes').value = data.notes || '';
+      document.getElementById('photo-url').value = data.photo_url || '';
+
+      document.querySelectorAll('input[name="height"]').forEach(el => el.checked = false);
+      const hr = document.querySelector(`input[name="height"][value="${data.height_m}"]`);
+      if (hr) hr.checked = true;
+
+      updateFormEditMode();
+    }
 
     function closePanel() {
       els.panel.classList.remove('visible');
@@ -819,12 +734,11 @@ async function loadTreeData(id) {
     }
     document.getElementById('btn-cancel').addEventListener('click', closePanel);
 
-    document.getElementById('btn-save').addEventListener('click', async (e) => {
-      e.preventDefault();
+    document.getElementById('btn-save').addEventListener('click', async () => {
       if (!state.session) { showToast('Sign in to save', 'warning'); return; }
-      const id = document.getElementById('tree-id').value || state.currentTreeId;
+      const id = state.currentTreeId;
       if (!id) return;
-      
+
       const payload = {
         species_en: document.getElementById('species-en').value,
         species_jp: document.getElementById('species-jp').value,
@@ -834,97 +748,105 @@ async function loadTreeData(id) {
         age_years: document.getElementById('age_years').value ? parseInt(document.getElementById('age_years').value) : null,
         notes: document.getElementById('notes').value,
         photo_url: document.getElementById('photo-url').value,
-        editor_id: state.session.user.id,  // ✅ Update attribution on edit
+        editor_id: state.session.user.id,
         editor_name: state.session.user.user_metadata?.full_name || state.session.user.email?.split('@')[0]
       };
-      
-      try {
-        await supabase.from('trees').update(payload).eq('id', id);
-        state.undoStack.push({ type: 'update', id });
-        closePanel(); await loadTrees();
-        showToast('✓ Tree updated', 'success');
-      } catch (err) {
-        console.error('Save failed:', err);
-        showToast('Failed to save: ' + err.message, 'error', 8000);
-      }
+
+      // Fix: check returned error rather than relying on throw
+      const { error } = await supabase.from('trees').update(payload).eq('id', id);
+      if (error) { showToast('Failed to save: ' + error.message, 'error', 8000); return; }
+
+      state.undoStack.push({ type: 'update', id });
+      closePanel();
+      await loadTrees();
+      showToast('✓ Tree updated', 'success');
     });
 
-    document.getElementById('btn-delete').addEventListener('click', async (e) => {
-      e.preventDefault();
+    document.getElementById('btn-delete').addEventListener('click', async () => {
       if (!state.session) { showToast('Sign in to delete', 'warning'); return; }
-      const id = document.getElementById('tree-id').value || state.currentTreeId;
+      const id = state.currentTreeId;
       if (!id || !confirm('Permanently delete this tree?')) return;
-      try {
-        await supabase.from('trees').delete().eq('id', id);
-        state.undoStack.push({ type: 'delete', id });
-        closePanel(); await loadTrees();
-        showToast('✓ Tree deleted', 'success');
-      } catch (err) {
-        console.error('Delete failed:', err);
-        showToast('Failed to delete: ' + err.message, 'error', 8000);
-      }
+
+      // Fix: check returned error rather than relying on throw
+      const { error } = await supabase.from('trees').delete().eq('id', id);
+      if (error) { showToast('Failed to delete: ' + error.message, 'error', 8000); return; }
+
+      state.undoStack.push({ type: 'delete', id });
+      closePanel();
+      await loadTrees();
+      showToast('✓ Tree deleted', 'success');
     });
 
-    // ── Load trees (paginated) ───────────────────────
-    async function loadTrees() {
-      try {
-        const PAGE_SIZE = 1000; let allTrees = [], from = 0;
-        while (true) {
-          const { data, error } = await supabase.from('trees').select('*').range(from, from + PAGE_SIZE - 1).order('id');
-          if (error) throw error; if (!data || data.length === 0) break;
-          allTrees = allTrees.concat(data);
-          if (data.length < PAGE_SIZE) break; from += PAGE_SIZE;
-          if (allTrees.length > 50000) break;
-        }
-        state.trees = allTrees;
-        
-        const validFeatures = [];
-        state.trees.forEach(t => {
-          const lat = parseFloat(t.latitude), lng = parseFloat(t.longitude);
-          if (!isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0) {
-            validFeatures.push({
-              type: 'Feature', geometry: { type: 'Point', coordinates: [lng, lat] }, properties: t
-            });
-          }
-        });
-        
-        const geojson = { type: 'FeatureCollection', features: validFeatures };
-        if (map.getSource('trees')) {
-          map.getSource('trees').setData(geojson);
-          if (state.mode === 'delete') updateDeleteHighlights();
-        }
-      } catch (err) { console.error('Load failed:', err); showToast('Failed to load trees', 'error'); }
-    }
-
-    // ── Exports ──────────────────────────────────────
+    // ── Data fetching ─────────────────────────────────
+    // Single source of truth — loadTrees uses this too, eliminating the duplicate
     async function fetchAllTrees() {
-      const PAGE_SIZE = 1000; let all = [], from = 0;
+      const PAGE_SIZE = 1000;
+      let all = [], from = 0;
       while (true) {
-        const { data, error } = await supabase.from('trees').select('*').range(from, from + PAGE_SIZE - 1).order('id');
-        if (error) throw error; if (!data || data.length === 0) break;
-        all = all.concat(data); if (data.length < PAGE_SIZE) break; from += PAGE_SIZE;
-        if (all.length > 50000) break;
+        const { data, error } = await supabase.from('trees')
+          .select('*').range(from, from + PAGE_SIZE - 1).order('id');
+        if (error) throw error;
+        if (!data?.length) break;
+        all = all.concat(data);
+        if (data.length < PAGE_SIZE || all.length > 50000) break;
+        from += PAGE_SIZE;
       }
       return all;
     }
 
+    async function loadTrees() {
+      try {
+        state.trees = await fetchAllTrees();
+
+        const features = state.trees
+          .filter(t => {
+            const lat = parseFloat(t.latitude), lng = parseFloat(t.longitude);
+            return !isNaN(lat) && !isNaN(lng) && lat !== 0 && lng !== 0;
+          })
+          .map(t => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [parseFloat(t.longitude), parseFloat(t.latitude)] },
+            properties: t
+          }));
+
+        const geojson = { type: 'FeatureCollection', features };
+        if (map.getSource('trees')) {
+          map.getSource('trees').setData(geojson);
+          if (state.mode === 'delete') updateDeleteHighlights();
+        }
+      } catch (err) {
+        console.error('Load failed:', err);
+        showToast('Failed to load trees', 'error');
+      }
+    }
+
+    // ── Exports ──────────────────────────────────────
     document.getElementById('btn-export-geojson')?.addEventListener('click', async () => {
-      const data = await fetchAllTrees();
-      if (!data?.length) return showToast('No trees to export', 'warning');
-      const geojson = { type: 'FeatureCollection', features: data.filter(t => t.latitude && t.longitude).map(t => ({
-        type: 'Feature', geometry: { type: 'Point', coordinates: [t.longitude, t.latitude] }, properties: t
-      }))};
-      downloadFile(JSON.stringify(geojson, null, 2), 'honmoku-trees.geojson', 'application/json');
-      showToast('✓ GeoJSON exported', 'success');
+      try {
+        const data = await fetchAllTrees();
+        if (!data?.length) return showToast('No trees to export', 'warning');
+        const geojson = {
+          type: 'FeatureCollection',
+          features: data.filter(t => t.latitude && t.longitude).map(t => ({
+            type: 'Feature',
+            geometry: { type: 'Point', coordinates: [t.longitude, t.latitude] },
+            properties: t
+          }))
+        };
+        downloadFile(JSON.stringify(geojson, null, 2), 'mokumap.geojson', 'application/json');
+        showToast('✓ GeoJSON exported', 'success');
+      } catch (err) { showToast('Export failed: ' + err.message, 'error'); }
     });
 
     document.getElementById('btn-export-csv')?.addEventListener('click', async () => {
-      const data = await fetchAllTrees();
-      if (!data?.length) return showToast('No trees to export', 'warning');
-      const headers = ['latitude','longitude','species_en','species_jp','species_lat','height_m','canopy_m2','age_years','notes','photo_url','editor_name'];
-      const rows = data.map(row => headers.map(h => `"${(row[h] ?? '').toString().replace(/"/g, '""')}"`).join(','));
-      downloadFile([headers.join(','), ...rows].join('\n'), 'honmoku-trees.csv', 'text/csv');
-      showToast('✓ CSV exported', 'success');
+      try {
+        const data = await fetchAllTrees();
+        if (!data?.length) return showToast('No trees to export', 'warning');
+        const headers = ['latitude','longitude','species_en','species_jp','species_lat','height_m','canopy_m2','age_years','notes','photo_url','editor_name'];
+        const rows = data.map(row => headers.map(h => `"${(row[h] ?? '').toString().replace(/"/g, '""')}"`).join(','));
+        downloadFile([headers.join(','), ...rows].join('\n'), 'mokumap.csv', 'text/csv');
+        showToast('✓ CSV exported', 'success');
+      } catch (err) { showToast('Export failed: ' + err.message, 'error'); }
     });
 
     function downloadFile(content, filename, type) {
