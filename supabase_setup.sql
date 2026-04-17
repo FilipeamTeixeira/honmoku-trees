@@ -9,7 +9,20 @@ create table if not exists public.profiles (
   created_at   timestamptz default now()
 );
 
+-- ============================================================
+-- HELPER FUNCTION — must be defined before RLS policies that use it
+-- ============================================================
+
+create or replace function public.get_my_role()
+returns text as $$
+  select role from public.profiles where id = auth.uid();
+$$ language sql security definer;
+
 alter table public.profiles enable row level security;
+
+drop policy if exists "Users can read own profile" on public.profiles;
+drop policy if exists "Admins can read all profiles" on public.profiles;
+drop policy if exists "Admins can update any profile" on public.profiles;
 
 create policy "Users can read own profile"
   on public.profiles for select
@@ -17,15 +30,11 @@ create policy "Users can read own profile"
 
 create policy "Admins can read all profiles"
   on public.profiles for select
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-  );
+  using (public.get_my_role() = 'admin');
 
 create policy "Admins can update any profile"
   on public.profiles for update
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-  );
+  using (public.get_my_role() = 'admin');
 
 -- Auto-create a profile row when a new user signs up
 create or replace function public.handle_new_user()
@@ -61,6 +70,11 @@ create table if not exists public.pending_changes (
 
 alter table public.pending_changes enable row level security;
 
+drop policy if exists "Editors can submit changes" on public.pending_changes;
+drop policy if exists "Editors can read own submissions" on public.pending_changes;
+drop policy if exists "Admins can read all pending changes" on public.pending_changes;
+drop policy if exists "Admins can update pending changes" on public.pending_changes;
+
 create policy "Editors can submit changes"
   on public.pending_changes for insert
   with check (auth.uid() = submitted_by);
@@ -71,29 +85,15 @@ create policy "Editors can read own submissions"
 
 create policy "Admins can read all pending changes"
   on public.pending_changes for select
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-  );
+  using (public.get_my_role() = 'admin');
 
 create policy "Admins can update pending changes"
   on public.pending_changes for update
-  using (
-    exists (select 1 from public.profiles where id = auth.uid() and role = 'admin')
-  );
+  using (public.get_my_role() = 'admin');
 
 
 -- ============================================================
--- 3. HELPER FUNCTION — call via sb.rpc('get_my_role')
--- ============================================================
-
-create or replace function public.get_my_role()
-returns text as $$
-  select role from public.profiles where id = auth.uid();
-$$ language sql security definer;
-
-
--- ============================================================
--- 4. PROMOTE A USER TO ADMIN
+-- 3. PROMOTE A USER TO ADMIN
 -- Uncomment, replace the email, and run once.
 -- ============================================================
 
@@ -102,3 +102,16 @@ $$ language sql security definer;
 -- where id = (
 --   select id from auth.users where email = 'your-admin@email.com'
 -- );
+
+-- ============================================================
+-- 4. FOREIGN KEY FROM pending_changes TO profiles
+-- Allows Supabase to resolve the relationship in queries.
+-- Run this if you want to use the join syntax later.
+-- ============================================================
+
+alter table public.pending_changes
+  drop constraint if exists pending_changes_submitted_by_fkey_profiles;
+
+alter table public.pending_changes
+  add constraint pending_changes_submitted_by_fkey_profiles
+  foreign key (submitted_by) references public.profiles(id) on delete set null;

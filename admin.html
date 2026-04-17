@@ -171,14 +171,14 @@
       text-align: center; padding: 64px 0;
       color: var(--ink-3); font-size: 14px; line-height: 2;
     }
-    .empty-icon { font-size: 36px; display: block; margin-bottom: 12px; opacity: 0.4; }
+    .empty-icon { display: block; margin-bottom: 12px; opacity: 0.4; }
     .loading { text-align: center; padding: 48px 0; color: var(--ink-3); font-size: 14px; }
 
     /* Access denied */
     #access-denied {
       text-align: center; padding: 100px 24px;
     }
-    #access-denied .lock { font-size: 52px; margin-bottom: 16px; }
+    #access-denied .lock { margin-bottom: 16px; }
     #access-denied h2 {
       font-family: 'DM Serif Display', serif;
       font-size: 28px; margin-bottom: 8px;
@@ -218,7 +218,7 @@
 
   <main>
     <div id="access-denied" style="display:none">
-      <div class="lock">🔒</div>
+      <div class="lock"><svg width="52" height="52" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg></div>
       <h2>Access restricted</h2>
       <p>This page is only available to admins.</p>
       <a href="map.html" class="btn-nav">← Back to map</a>
@@ -256,7 +256,11 @@
     function showToast(msg, type = 'info') {
       const t = document.createElement('div');
       t.className = `toast ${type}`;
-      const icons = { info: 'ℹ️', success: '✅', error: '❌' };
+      const icons = {
+        info:    '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="17" x2="12.01" y2="17"/></svg>',
+        success: '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg>',
+        error:   '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>'
+      };
       t.innerHTML = `<span>${icons[type] || ''}</span><span>${msg}</span>`;
       document.getElementById('toast-container').appendChild(t);
       setTimeout(() => t.remove(), 5000);
@@ -341,7 +345,7 @@
       if (remaining === 0) {
         document.getElementById('pending-list').innerHTML = `
           <div class="empty">
-            <span class="empty-icon">✅</span>
+            <span class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></span>
             All caught up — no pending changes.
           </div>`;
         badge.style.display = 'none';
@@ -364,7 +368,7 @@
       const list = document.getElementById('pending-list');
 
       if (!data.length) {
-        list.innerHTML = `<div class="empty"><span class="empty-icon">✅</span>All caught up — no pending changes.</div>`;
+        list.innerHTML = `<div class="empty"><span class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="20 6 9 17 4 12"/></svg></span>All caught up — no pending changes.</div>`;
         document.getElementById('queue-subtitle').textContent = 'Nothing to review right now.';
         return;
       }
@@ -392,7 +396,7 @@
         .limit(50);
 
       if (error) { list.innerHTML = `<div class="empty">Failed to load history.</div>`; return; }
-      if (!data.length) { list.innerHTML = `<div class="empty"><span class="empty-icon">📋</span>No history yet.</div>`; return; }
+      if (!data.length) { list.innerHTML = `<div class="empty"><span class="empty-icon"><svg width="36" height="36" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5H7a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2V7a2 2 0 0 0-2-2h-2"/><rect x="9" y="3" width="6" height="4" rx="1"/><line x1="9" y1="12" x2="15" y2="12"/><line x1="9" y1="16" x2="13" y2="16"/></svg></span>No history yet.</div>`; return; }
 
       list.innerHTML = '';
       data.forEach(c => {

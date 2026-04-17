@@ -47,7 +47,7 @@
     .about-layout{display:grid;grid-template-columns:1fr 1fr;gap:80px;margin-top:56px}
     .attr-grid{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden}
     .attr-cell{background:var(--white);padding:24px 22px}
-    .attr-icon{font-size:20px;margin-bottom:10px}
+    .attr-icon{margin-bottom:10px;color:var(--ink-3)}
     .attr-title{font-size:14px;font-weight:500;margin-bottom:4px}
     .attr-desc{font-size:13px;color:var(--ink-3)}
     .steps-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border);border-radius:var(--r);overflow:hidden;margin-top:56px}
@@ -121,10 +121,10 @@
         <p class="reveal">This project documents those trees: species, height, canopy spread, and estimated age. Each entry is a small act of attention — a way of saying <em>this tree was here, and someone noticed.</em></p>
       </div>
       <div class="attr-grid reveal">
-        <div class="attr-cell"><div class="attr-icon">🌿</div><div class="attr-title">Species</div><div class="attr-desc">English, Japanese, and Latin names</div></div>
-        <div class="attr-cell"><div class="attr-icon">📏</div><div class="attr-title">Height</div><div class="attr-desc">Estimated trunk-to-crown height in metres</div></div>
-        <div class="attr-cell"><div class="attr-icon">🌳</div><div class="attr-title">Canopy</div><div class="attr-desc">Approximate canopy spread area in m²</div></div>
-        <div class="attr-cell"><div class="attr-icon">⏳</div><div class="attr-title">Age</div><div class="attr-desc">Estimated age in years where known</div></div>
+        <div class="attr-cell"><div class="attr-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M11 20A7 7 0 0 1 4 13c0-5 8-12 8-12s8 7 8 12a7 7 0 0 1-7 7z"/><path d="M11.5 17l-3-3"/></svg></div><div class="attr-title">Species</div><div class="attr-desc">English, Japanese, and Latin names</div></div>
+        <div class="attr-cell"><div class="attr-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="12" y1="2" x2="12" y2="22"/><polyline points="8 6 12 2 16 6"/><polyline points="8 18 12 22 16 18"/></svg></div><div class="attr-title">Height</div><div class="attr-desc">Estimated trunk-to-crown height in metres</div></div>
+        <div class="attr-cell"><div class="attr-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="15 3 21 3 21 9"/><polyline points="9 21 3 21 3 15"/><line x1="21" y1="3" x2="14" y2="10"/><line x1="3" y1="21" x2="10" y2="14"/></svg></div><div class="attr-title">Canopy</div><div class="attr-desc">Approximate canopy spread area in m²</div></div>
+        <div class="attr-cell"><div class="attr-icon"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg></div><div class="attr-title">Age</div><div class="attr-desc">Estimated age in years where known</div></div>
       </div>
     </div>
   </section>
@@ -169,7 +169,7 @@
     sb.auth.getSession().then(({ data: { session } }) => {
       if (session) {
         const btn = document.getElementById('nav-login-btn');
-        if (btn) { btn.textContent = 'Open map'; btn.href = 'map.html'; }
+        if (btn) btn.style.display = 'none';
       }
     });
 
