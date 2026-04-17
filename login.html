@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Sign in — mokumap</title>
+  <link rel="icon" type="image/png" href="mokumaplogo.png" />
+  <link rel="apple-touch-icon" href="mokumaplogo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display&family=DM+Sans&display=swap" rel="stylesheet" />
@@ -16,6 +18,10 @@
     input,textarea,button,select{font-family:inherit}
     body{font-family:'DM Sans',-apple-system,sans-serif;background:var(--paper);color:var(--ink);display:flex;align-items:center;justify-content:center;min-height:100vh;margin:0}
     .card{background:var(--white);padding:32px;border-radius:var(--r);box-shadow:0 4px 20px rgba(0,0,0,0.08);max-width:400px;width:90%}
+    .brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:22px;text-decoration:none;color:var(--ink)}
+    .brand-icon{width:42px;height:42px;border-radius:13px;display:block;flex-shrink:0}
+    .brand-name{font-family:'DM Serif Display',serif;font-size:20px;line-height:1}
+    .brand-name em{color:var(--accent);font-style:normal}
     h1{font-family:'DM Serif Display',serif;margin:0 0 8px;font-size:24px;color:var(--ink)}
     p{color:var(--ink-2);margin:0 0 24px;font-size:14px}
     label{display:block;font-size:13px;font-weight:500;margin:16px 0 6px;color:var(--ink)}
@@ -30,6 +36,10 @@
 </head>
 <body>
   <div class="card">
+    <a href="index.html" class="brand" aria-label="mokumap home">
+      <img src="mokumaplogo.png" alt="mokumap" class="brand-icon">
+      <span class="brand-name">moku<em>map</em></span>
+    </a>
     <h1>Sign in to contribute</h1>
     <p>Enter your credentials to access the tree editor. Accounts are created manually by the project admin.</p>
 

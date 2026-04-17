@@ -4,6 +4,8 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>mokumap — Map</title>
+  <link rel="icon" type="image/png" href="mokumaplogo.png" />
+  <link rel="apple-touch-icon" href="mokumaplogo.png" />
 
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -60,12 +62,18 @@
     }
 
     .nav-brand {
-      display: flex; align-items: center;
+      display: flex; align-items: center; gap: 10px;
       text-decoration: none; color: var(--ink);
       font-family: 'DM Serif Display', serif;
       font-size: 15px;
       flex-shrink: 0;
       letter-spacing: -0.01em;
+    }
+    .brand-icon {
+      width: 28px; height: 28px;
+      border-radius: 9px;
+      display: block;
+      flex-shrink: 0;
     }
     .nav-brand em { color: var(--accent); font-style: normal; }
 
@@ -408,6 +416,8 @@
       #main { flex-direction: column; }
       #side-panel { width: 100%; max-width: none; border-left: none; border-top: 0.5px solid var(--border); max-height: 48vh; }
       nav { gap: 7px; padding: 0 14px; }
+      .nav-brand { gap: 8px; }
+      .brand-icon { width: 24px; height: 24px; border-radius: 8px; }
       .mode-btn { padding: 5px 10px; font-size: 12px; }
     }
   </style>
@@ -415,7 +425,10 @@
 <body>
 
   <nav>
-    <a href="index.html" class="nav-brand">moku<em>map</em></a>
+    <a href="index.html" class="nav-brand" aria-label="mokumap home">
+      <img src="mokumaplogo.png" alt="mokumap" class="brand-icon" />
+      <span>moku<em>map</em></span>
+    </a>
 
     <div class="nav-sep"></div>
 
@@ -675,10 +688,10 @@
         id: 'tree-points', type: 'circle', source: 'trees',
         filter: ['!', ['has', 'point_count']],
         paint: {
-          'circle-radius': 7,
+          'circle-radius': 4,
           'circle-color': '#22c55e',
           'circle-opacity': 0.9,
-          'circle-stroke-width': 1.5,
+          'circle-stroke-width': 0.5,
           'circle-stroke-color': '#fff'
         }
       });

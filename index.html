@@ -3,8 +3,10 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>mokumap — Community tree map of Honmoku, Yokohama</title>
-  <meta name="description" content="A community project documenting the trees, species, and canopy of Honmoku neighbourhood in Yokohama, Japan." />
+  <title>mokumap — Community tree map of Yokohama</title>
+  <meta name="description" content="A community project documenting the trees, species, and canopy of Yokohama, Japan." />
+  <link rel="icon" type="image/png" href="mokumaplogo.png" />
+  <link rel="apple-touch-icon" href="mokumaplogo.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=DM+Serif+Display:ital@0;1&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet" />
@@ -17,8 +19,8 @@
     /* Fix: form controls don't inherit font by default */
     input,textarea,button,select{font-family:inherit}
     nav{position:fixed;top:0;left:0;right:0;z-index:100;height:60px;display:flex;align-items:center;justify-content:space-between;padding:0 32px;background:rgba(247,246,243,0.90);backdrop-filter:blur(12px);border-bottom:0.5px solid var(--border)}
-    .nav-brand{display:flex;align-items:center;gap:10px;text-decoration:none;color:var(--ink)}
-    .brand-icon{width:30px;height:30px;background:var(--accent);border-radius:9px;display:flex;align-items:center;justify-content:center;color:#fff;font-size:15px}
+    .nav-brand{display:flex;align-items:center;gap:12px;text-decoration:none;color:var(--ink)}
+    .brand-icon{width:34px;height:34px;display:block;flex-shrink:0;border-radius:10px}
     .brand-name{font-family:'DM Serif Display',serif;font-size:16px}
     .brand-name em{color:var(--accent);font-style:normal}
     .nav-links{display:flex;align-items:center;gap:32px;list-style:none}
@@ -83,7 +85,7 @@
 <body>
   <nav>
     <a href="index.html" class="nav-brand">
-      <div class="brand-icon">🌳</div>
+      <img src="mokumaplogo.png" alt="mokumap" class="brand-icon" />
       <span class="brand-name">moku<em>map</em></span>
     </a>
     <ul class="nav-links">
@@ -99,8 +101,8 @@
 
   <section class="hero">
     <p class="hero-kana reveal">本牧の木々</p>
-    <h1 class="reveal d1">Every tree in Honmoku,<br><em>mapped.</em></h1>
-    <p class="hero-sub reveal d2">A community record of the trees, species, and canopy of Honmoku neighbourhood in Yokohama.</p>
+    <h1 class="reveal d1">Every tree in Yokohama,<br><em>mapped.</em></h1>
+    <p class="hero-sub reveal d2">A community record of the trees, species, and canopy of Yokohama.</p>
     <div class="hero-actions reveal d3">
       <a href="map.html" class="btn-primary">Explore the map</a>
       <a href="login.html" class="btn-ghost">Sign in to contribute</a>
@@ -114,8 +116,8 @@
     <p class="section-label reveal">The project</p>
     <div class="about-layout">
       <div class="about-text">
-        <h2 class="section-title reveal">A living record of Honmoku's urban forest</h2>
-        <p class="reveal">Honmoku is a quiet coastal neighbourhood in Yokohama — once an international settlement, now a place where old gardens and street trees carry decades of history in their rings.</p>
+        <h2 class="section-title reveal">A living record of Yokohama's urban forest</h2>
+        <p class="reveal">Yokohama, once an international settlement, now a place where old gardens and street trees carry decades of history in their rings.</p>
         <p class="reveal">This project documents those trees: species, height, canopy spread, and estimated age. Each entry is a small act of attention — a way of saying <em>this tree was here, and someone noticed.</em></p>
       </div>
       <div class="attr-grid reveal">
@@ -134,7 +136,7 @@
     <h2 class="section-title reveal">Open to explore.<br>Reviewed before it's live.</h2>
     <p class="section-intro reveal">Anyone can browse the map. Contributing data requires an approved account — and every submission is reviewed by the admin before it appears.</p>
     <div class="steps-grid reveal">
-      <div class="step"><p class="step-num">01</p><p class="step-title">Explore the map</p><p class="step-body">Browse every documented tree in Honmoku. Click any pin to see species, height, canopy data, and notes. No account needed.</p></div>
+      <div class="step"><p class="step-num">01</p><p class="step-title">Explore the map</p><p class="step-body">Browse every documented tree in Yokohama. Click any pin to see species, height, canopy data, and notes. No account needed.</p></div>
       <div class="step dark"><p class="step-num">02</p><p class="step-title">Get a contributor account</p><p class="step-body">Accounts are created manually by the project admin. Once approved, you receive credentials to sign in and contribute.</p></div>
       <div class="step"><p class="step-num">03</p><p class="step-title">Submit a change</p><p class="step-body">Add a new tree, edit an existing entry, or flag one for removal. Your change is queued for admin review before going live.</p></div>
     </div>
@@ -149,7 +151,7 @@
   <section class="cta-shell">
     <div class="cta-inner">
       <h2 class="reveal">Start exploring</h2>
-      <p class="reveal">Hundreds of trees documented. More added every week. Zoom in, click around, and learn the trees of Honmoku.</p>
+      <p class="reveal">Hundreds of trees documented. More added every week. Zoom in, click around, and learn the trees of Yokohama.</p>
       <a href="map.html" class="btn-primary reveal" style="margin-top:32px;display:inline-flex">Open the map →</a>
     </div>
   </section>
@@ -180,7 +182,7 @@
           const { count } = await sb.from('trees').select('*', { count: 'exact', head: true });
           n = count || 0;
         }
-        el.innerHTML = `<b>${n.toLocaleString()}</b> trees documented across Honmoku`;
+        el.innerHTML = `<b>${n.toLocaleString()}</b> trees documented across Yokohama`;
       } catch (_) { el.textContent = ''; }
     }
     loadStat();
